@@ -1,2 +1,6 @@
 node_modules/
 .DS_Store
+# security-scan artifacts (local only)
+.codeql-db/
+codeql-results.sarif
+static_analysis_semgrep*/

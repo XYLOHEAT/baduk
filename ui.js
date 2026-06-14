@@ -44,8 +44,9 @@
 
   // ---------- state ----------
   var S = {
-    lang: localStorage.getItem('baduk.lang') || 'th',
-    theme: localStorage.getItem('baduk.theme') || '',
+    // validate persisted values: a corrupted localStorage must not crash or inject
+    lang: localStorage.getItem('baduk.lang') === 'en' ? 'en' : 'th',
+    theme: localStorage.getItem('baduk.theme'),
     mode: 'play',
     size: 9,
     game: null,
@@ -476,7 +477,8 @@
     svg = $('board');
     layerGrid = $('layerGrid'); layerMark = $('layerMark');
     layerStone = $('layerStone'); layerOver = $('layerOver');
-    if (S.theme) document.documentElement.setAttribute('data-theme', S.theme);
+    if (S.theme === 'dark' || S.theme === 'light') document.documentElement.setAttribute('data-theme', S.theme);
+    var rl = $('repoLink'); if (rl) rl.href = 'https://github.com/XYLOHEAT/baduk';
     applyLang();
     attach();
     setMode('learn'); // start in teaching mode, as requested
