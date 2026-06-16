@@ -91,6 +91,16 @@
           <span id="capWhite">White captured: 0</span>
         </div>
 
+        <div id="difficultyRow" class="diff-row" hidden>
+          <span id="diffLabel" class="diff-label">Difficulty</span>
+          <div class="modes diff-seg" role="group" aria-labelledby="diffLabel">
+            <button id="diffEasy" data-diff="easy" type="button" aria-pressed="false">Easy</button>
+            <button id="diffMed" data-diff="medium" type="button" aria-pressed="true">Medium</button>
+            <button id="diffHard" data-diff="hard" type="button" aria-pressed="false">Hard</button>
+          </div>
+          <p id="diffNote" class="diff-note" hidden></p>
+        </div>
+
         <div id="sizeRow" class="size-row">
           <label id="sizeLabel" for="sizeSel">Board size</label>
           <select id="sizeSel">

@@ -26,7 +26,9 @@
       passLabel: 'ผ่าน', stoneOnBoard: 'หมากบนกระดาน',
       resume: 'เล่นต่อ', scoringHint: 'แตะกลุ่มหมากที่ “ตาย” เพื่อนำออก แล้วดูแต้มด้านล่าง',
       mascotHi: 'มาเริ่มเรียนกัน!', mascotGood: 'เก่งมาก!', mascotThink: 'ขอคิดแป๊บ…',
-      mascotOops: 'อุ๊ปส์ ตรงนั้นเดินไม่ได้', mascotWin: 'จบเกม มานับแต้มกัน', mascotPlay: 'ตาคุณแล้ว วางได้เลย'
+      mascotOops: 'อุ๊ปส์ ตรงนั้นเดินไม่ได้', mascotWin: 'จบเกม มานับแต้มกัน', mascotPlay: 'ตาคุณแล้ว วางได้เลย',
+      difficulty: 'ระดับความยาก', diffEasy: 'ง่าย', diffMedium: 'กลาง', diffHard: 'ยาก',
+      diffNote19: 'กระดาน 19×19 บอทเล่นระดับเดียว (เร็ว)'
     },
     en: {
       modePlay: 'Two players', modeBot: 'Vs bot', modeLearn: 'Learn',
@@ -44,7 +46,9 @@
       passLabel: 'pass', stoneOnBoard: 'stones on board',
       resume: 'Resume', scoringHint: 'Tap “dead” groups to remove them, then read the score below',
       mascotHi: "Let's learn!", mascotGood: 'Nice move!', mascotThink: 'Thinking…',
-      mascotOops: 'Oops, you can\'t play there', mascotWin: 'Game over, let\'s count', mascotPlay: 'Your turn'
+      mascotOops: 'Oops, you can\'t play there', mascotWin: 'Game over, let\'s count', mascotPlay: 'Your turn',
+      difficulty: 'Difficulty', diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard',
+      diffNote19: '19×19: the bot plays one fast level'
     }
   };
 
@@ -63,7 +67,9 @@
     busy: false,
     scoring: false,    // dead-stone marking mode at game end
     dead: null,        // Set of dead stone indices while scoring
-    botToken: 0        // guards against stale worker replies after new game
+    botToken: 0,       // guards against stale worker replies after new game
+    difficulty: (['easy', 'medium', 'hard'].indexOf(localStorage.getItem('baduk.difficulty')) >= 0
+      ? localStorage.getItem('baduk.difficulty') : 'medium')
   };
   function t(k) { return T[S.lang][k]; }
   var botWorker = null;
@@ -282,18 +288,28 @@
   }
 
   // ---------- bot ----------
-  // 9x9 / 13x13: Monte-Carlo bot in a Web Worker (worker.js). 19x19: the greedy
-  // heuristic below (flat MC is too slow / weak on 19x19 in JS).
+  // Difficulty maps to engine + thinking budget:
+  //   easy   -> greedy heuristic (weak, instant) at any size
+  //   medium -> Monte-Carlo, short budget   (worker.js)
+  //   hard   -> Monte-Carlo, long budget     (reads more, stronger)
+  // Monte-Carlo runs on 9x9 / 13x13 only; on 19x19 flat MC is too slow/weak in JS,
+  // so every level falls back to the greedy heuristic there.
+  function botBudgetMs() {
+    if (S.difficulty === 'medium') return S.size <= 9 ? 500 : 750;
+    return S.size <= 9 ? 1400 : 1900; // hard
+  }
+
   function botTurn() {
     S.busy = true;
     setStatus(t('botThinks'));
     setMascot('think', t('mascotThink'));
     render();
-    if (S.size <= 13) {
+    var useMC = (S.difficulty !== 'easy') && S.size <= 13;
+    if (useMC) {
       var g = S.game, token = ++S.botToken;
       getWorker().postMessage({
         board: Array.from(g.board), size: g.size, toMove: WHITE, komi: g.komi,
-        ko: g.ko, budgetMs: g.size <= 9 ? 1000 : 1300, token: token
+        ko: g.ko, budgetMs: botBudgetMs(), token: token
       });
     } else {
       setTimeout(function () { applyBotMove(botMove(S.game, WHITE)); }, 200);
@@ -499,6 +515,9 @@
     document.querySelectorAll('[data-mode]').forEach(function (b) {
       b.onclick = function () { setMode(b.getAttribute('data-mode')); };
     });
+    document.querySelectorAll('[data-diff]').forEach(function (b) {
+      b.onclick = function () { setDifficulty(b.getAttribute('data-diff')); };
+    });
   }
 
   // ---------- mode / lang / theme ----------
@@ -509,8 +528,18 @@
     });
     $('scoreBox').hidden = true;
     $('sizeRow').hidden = (m === 'learn');
+    $('difficultyRow').hidden = (m !== 'bot'); // difficulty only matters vs the bot
     if (m === 'learn') loadLesson(S.lessonIdx);
     else newGame();
+  }
+
+  function setDifficulty(d) {
+    S.difficulty = d;
+    localStorage.setItem('baduk.difficulty', d);
+    document.querySelectorAll('[data-diff]').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-diff') === d ? 'true' : 'false');
+    });
+    $('diffNote').hidden = !(S.size >= 19); // difficulty has no effect on 19x19
   }
 
   function newGame() {
@@ -519,6 +548,7 @@
     S.cursor = { x: Math.floor(S.size / 2), y: Math.floor(S.size / 2) };
     S.scoring = false; S.dead = null; S.busy = false; S.botToken++; // invalidate any in-flight bot reply
     $('scoreBox').hidden = true; $('scoreControls').hidden = true;
+    $('diffNote').hidden = !(S.size >= 19);
     setMascot('idle', S.mode === 'bot' ? t('mascotPlay') : t('mascotHi'));
     buildBoard();
     render();
@@ -535,6 +565,11 @@
     $('undoBtn').textContent = t('undo');
     $('countBtn').textContent = t('count');
     $('sizeLabel').textContent = t('size');
+    $('diffLabel').textContent = t('difficulty');
+    $('diffEasy').textContent = t('diffEasy');
+    $('diffMed').textContent = t('diffMedium');
+    $('diffHard').textContent = t('diffHard');
+    $('diffNote').textContent = t('diffNote19');
     $('hintBtn').textContent = t('hint');
     $('gotItBtn').textContent = t('gotIt');
     $('prevLesson').textContent = '‹ ' + t('prev');
@@ -566,6 +601,7 @@
     var rl = $('repoLink'); if (rl) rl.href = 'https://github.com/XYLOHEAT/baduk';
     applyLang();
     attach();
+    setDifficulty(S.difficulty); // sync the difficulty control with the stored value
     setMode('learn'); // start in teaching mode, as requested
     setMascot('idle', t('mascotHi'));
   }
