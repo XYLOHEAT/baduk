@@ -23,7 +23,10 @@
       hint: 'คำใบ้', gotIt: 'เข้าใจแล้ว', prev: 'ก่อนหน้า', next: 'ถัดไป',
       lesson: 'บทเรียน', goalLabel: 'เป้าหมาย', wellDone: 'ทำได้ดีมาก',
       allDone: 'จบทุกบทแล้ว! ไปลองเล่นจริงได้เลย', theme: 'สลับธีม', langName: 'EN',
-      passLabel: 'ผ่าน', stoneOnBoard: 'หมากบนกระดาน'
+      passLabel: 'ผ่าน', stoneOnBoard: 'หมากบนกระดาน',
+      resume: 'เล่นต่อ', scoringHint: 'แตะกลุ่มหมากที่ “ตาย” เพื่อนำออก แล้วดูแต้มด้านล่าง',
+      mascotHi: 'มาเริ่มเรียนกัน!', mascotGood: 'เก่งมาก!', mascotThink: 'ขอคิดแป๊บ…',
+      mascotOops: 'อุ๊ปส์ ตรงนั้นเดินไม่ได้', mascotWin: 'จบเกม มานับแต้มกัน', mascotPlay: 'ตาคุณแล้ว วางได้เลย'
     },
     en: {
       modePlay: 'Two players', modeBot: 'Vs bot', modeLearn: 'Learn',
@@ -38,7 +41,10 @@
       hint: 'Hint', gotIt: 'Got it', prev: 'Prev', next: 'Next',
       lesson: 'Lesson', goalLabel: 'Goal', wellDone: 'Well done',
       allDone: 'All lessons done! Go play a real game.', theme: 'Theme', langName: 'ไทย',
-      passLabel: 'pass', stoneOnBoard: 'stones on board'
+      passLabel: 'pass', stoneOnBoard: 'stones on board',
+      resume: 'Resume', scoringHint: 'Tap “dead” groups to remove them, then read the score below',
+      mascotHi: "Let's learn!", mascotGood: 'Nice move!', mascotThink: 'Thinking…',
+      mascotOops: 'Oops, you can\'t play there', mascotWin: 'Game over, let\'s count', mascotPlay: 'Your turn'
     }
   };
 
@@ -54,14 +60,27 @@
     cursor: { x: 4, y: 4 },
     hover: null,
     lessonIdx: 0,
-    busy: false
+    busy: false,
+    scoring: false,    // dead-stone marking mode at game end
+    dead: null,        // Set of dead stone indices while scoring
+    botToken: 0        // guards against stale worker replies after new game
   };
   function t(k) { return T[S.lang][k]; }
+  var botWorker = null;
 
   var $ = function (id) { return document.getElementById(id); };
   var svg, layerGrid, layerMark, layerStone, layerOver;
   var SVGNS = 'http://www.w3.org/2000/svg';
   var PAD = 1, R = 0.46;
+
+  // mascot ("Goishi-san"-style stone guide; original art, expressions toggled by path)
+  var mEyeL, mEyeR, mMouth;
+  var MFACE = {
+    idle:  { l: 'M23 27 v4', r: 'M39 27 v4', m: 'M25 40 q7 5 14 0' },
+    happy: { l: 'M21 30 q3 -5 6 0', r: 'M37 30 q3 -5 6 0', m: 'M24 39 q8 8 16 0' },
+    think: { l: 'M22 28 h4', r: 'M38 28 h4', m: 'M30 42 q2 2 4 0' },
+    oops:  { l: 'M22 28 a2.4 2.4 0 1 0 4.8 0 a2.4 2.4 0 1 0 -4.8 0', r: 'M37 28 a2.4 2.4 0 1 0 4.8 0 a2.4 2.4 0 1 0 -4.8 0', m: 'M29 41 a2.4 2.4 0 1 0 4.8 0 a2.4 2.4 0 1 0 -4.8 0' }
+  };
 
   // ---------- helpers ----------
   function cloneGame(g) {
@@ -127,6 +146,7 @@
       var x = i % n, y = (i - x) / n;
       var cls = 'stone ' + (v === BLACK ? 'black' : 'white');
       if (g.lastMove && !g.lastMove.pass && g.lastMove.x === x && g.lastMove.y === y) cls += ' just-placed';
+      if (S.scoring && S.dead && S.dead.has(i)) cls += ' dead';
       layerStone.appendChild(el('circle', { cx: px(x), cy: px(y), r: R, class: cls }));
     }
 
@@ -216,6 +236,7 @@
     if (!res.ok) {
       S.snapshots.pop();
       setStatus(reasonMsg(res.reason));
+      setMascot('oops', t('mascotOops'));
       flashInvalid(x, y);
       // in the suicide / ko lessons, an illegal attempt is part of learning
       render();
@@ -236,7 +257,7 @@
   function announceMove(res, color, x, y) {
     var nm = (color === BLACK ? t('black') : t('white'));
     var msg = nm + ' ' + String.fromCharCode(65 + x) + (S.size - y);
-    if (res.captured && res.captured.length) msg += ' · +' + res.captured.length;
+    if (res.captured && res.captured.length) { msg += ' · +' + res.captured.length; setMascot('happy', t('mascotGood')); }
     setStatus(msg);
   }
 
@@ -265,23 +286,46 @@
     setTimeout(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 260);
   }
 
-  // ---------- bot (naive greedy) ----------
-  // ponytail: greedy heuristic — captures > atari > safe random, avoids self-atari
-  // and filling its own eyes. Plenty for a beginner; swap in MCTS if real strength is wanted.
+  // ---------- bot ----------
+  // 9x9 / 13x13: Monte-Carlo bot in a Web Worker (worker.js). 19x19: the greedy
+  // heuristic below (flat MC is too slow / weak on 19x19 in JS).
   function botTurn() {
     S.busy = true;
     setStatus(t('botThinks'));
+    setMascot('think', t('mascotThink'));
     render();
-    setTimeout(function () {
-      var mv = botMove(S.game, WHITE);
-      S.busy = false;
-      if (!mv) { setStatus(t('botPassed')); snapshot(); var r = E.pass(S.game); render(); if (r.ended) endGame(); return; }
-      snapshot();
-      var res = E.play(S.game, mv.x, mv.y, WHITE);
-      render();
-      announceMove(res, WHITE, mv.x, mv.y);
-      if (S.game.passes >= 2) endGame();
-    }, 280);
+    if (S.size <= 13) {
+      var g = S.game, token = ++S.botToken;
+      getWorker().postMessage({
+        board: Array.from(g.board), size: g.size, toMove: WHITE, komi: g.komi,
+        ko: g.ko, budgetMs: g.size <= 9 ? 1000 : 1300, token: token
+      });
+    } else {
+      setTimeout(function () { applyBotMove(botMove(S.game, WHITE)); }, 200);
+    }
+  }
+
+  function getWorker() {
+    if (!botWorker) {
+      botWorker = new Worker('worker.js');
+      botWorker.onmessage = function (e) {
+        if (e.data.token !== S.botToken) return; // stale reply (new game / mode change)
+        applyBotMove(e.data.pass ? null : { x: e.data.x, y: e.data.y });
+      };
+      botWorker.onerror = function () { applyBotMove(botMove(S.game, WHITE)); }; // fall back
+    }
+    return botWorker;
+  }
+
+  function applyBotMove(mv) {
+    S.busy = false;
+    setMascot('idle', t('mascotPlay'));
+    snapshot();
+    var res = mv ? E.play(S.game, mv.x, mv.y, WHITE) : { ok: false };
+    if (!res.ok) { S.snapshots.pop(); var r = E.pass(S.game); setStatus(t('botPassed')); render(); if (r.ended) endGame(); return; }
+    render();
+    announceMove(res, WHITE, mv.x, mv.y);
+    if (S.game.passes >= 2) endGame();
   }
 
   function isOwnEye(g, x, y, color) {
@@ -327,6 +371,7 @@
     var L = LESSONS[S.lessonIdx];
     if (L.check && L.check(S.game)) {
       setStatus('✔ ' + t('wellDone') + ' · ' + L.success[S.lang]);
+      setMascot('happy', t('mascotGood'));
       $('nextLesson').classList.add('pulse');
     }
   }
@@ -342,26 +387,61 @@
     S.game.toMove = L.toMove;
     S.snapshots = [];
     S.cursor = { x: Math.floor(L.size / 2), y: Math.floor(L.size / 2) };
+    S.scoring = false; S.dead = null; S.busy = false; S.botToken++;
+    $('scoreBox').hidden = true; $('scoreControls').hidden = true;
     buildBoard();
     render();
     setStatus('');
+    setMascot('idle', t('mascotHi'));
     $('nextLesson').classList.remove('pulse');
   }
 
-  // ---------- score / game over ----------
-  function endGame() { showScore(true); }
-  function showScore(over) {
-    var sc = E.score(S.game);
-    var box = $('scoreBox');
-    box.hidden = false;
-    var head = over ? t('gameOver') : t('count');
+  // ---------- scoring (manual dead-stone marking + area count) ----------
+  function endGame() { enterScoring(); }
+
+  function enterScoring() {
+    if (S.scoring) return;
+    S.scoring = true;
+    S.dead = new Set();
+    S.hover = null;
+    $('scoreControls').hidden = false;
+    $('scoreHint').textContent = t('scoringHint');
+    $('resumeBtn').textContent = t('resume');
+    setStatus(t('scoringHint'));
+    setMascot('happy', t('mascotWin'));
+    updateScoreLive();
+    render();
+  }
+
+  function exitScoring() {
+    S.scoring = false;
+    S.dead = null;
+    $('scoreControls').hidden = true;
+    $('scoreBox').hidden = true;
+    setStatus('');
+    setMascot('idle', t('mascotPlay'));
+    render();
+  }
+
+  function toggleDead(x, y) {
+    var g = S.game, i = E.idx(g, x, y);
+    if (g.board[i] === EMPTY) return;
+    var grp = E.group(g, i);
+    var wasDead = S.dead.has(grp.stones[0]);
+    grp.stones.forEach(function (st) { if (wasDead) S.dead.delete(st); else S.dead.add(st); });
+    updateScoreLive();
+    render();
+  }
+
+  function updateScoreLive() {
+    var sc = E.score(S.game, S.dead ? Array.from(S.dead) : null);
+    $('scoreBox').hidden = false;
     var who = sc.winner === BLACK ? t('winnerBlack') : sc.winner === WHITE ? t('winnerWhite') : t('tie');
-    $('scoreHead').textContent = head;
+    $('scoreHead').textContent = t('count');
     $('scoreLine').textContent =
       t('black') + ' ' + sc.black + '  ·  ' + t('white') + ' ' + sc.white + ' (' + t('komi') + ' ' + sc.komi + ')';
     $('scoreWinner').textContent = sc.winner === 0 ? who
       : who + ' ' + t('by') + ' ' + sc.margin.toFixed(1) + ' ' + t('points');
-    setStatus(head + ': ' + who);
   }
 
   // ---------- pointer + keyboard ----------
@@ -385,7 +465,7 @@
     svg.addEventListener('pointerdown', function (e) {
       var p = svgToPoint(e); if (!p) return;
       S.cursor = { x: p.x, y: p.y };
-      tryPlay(p.x, p.y);
+      if (S.scoring) toggleDead(p.x, p.y); else tryPlay(p.x, p.y);
     });
     svg.addEventListener('keydown', function (e) {
       var n = S.size, c = S.cursor, handled = true;
@@ -393,7 +473,7 @@
       else if (e.key === 'ArrowRight') c.x = Math.min(n - 1, c.x + 1);
       else if (e.key === 'ArrowUp') c.y = Math.max(0, c.y - 1);
       else if (e.key === 'ArrowDown') c.y = Math.min(n - 1, c.y + 1);
-      else if (e.key === 'Enter' || e.key === ' ') tryPlay(c.x, c.y);
+      else if (e.key === 'Enter' || e.key === ' ') { if (S.scoring) toggleDead(c.x, c.y); else tryPlay(c.x, c.y); }
       else handled = false;
       if (handled) { e.preventDefault(); render(); }
     });
@@ -401,7 +481,8 @@
     $('newGameBtn').onclick = function () { if (S.mode === 'learn') loadLesson(S.lessonIdx); else newGame(); };
     $('passBtn').onclick = doPass;
     $('undoBtn').onclick = undo;
-    $('countBtn').onclick = function () { showScore(false); };
+    $('countBtn').onclick = function () { if (!S.busy) enterScoring(); };
+    $('resumeBtn').onclick = exitScoring;
     $('langBtn').onclick = function () { S.lang = S.lang === 'th' ? 'en' : 'th'; localStorage.setItem('baduk.lang', S.lang); applyLang(); render(); };
     $('themeBtn').onclick = toggleTheme;
     $('sizeSel').onchange = function (e) { S.size = parseInt(e.target.value, 10); newGame(); };
@@ -441,7 +522,9 @@
     S.game = E.createGame(S.size, 6.5);
     S.snapshots = [];
     S.cursor = { x: Math.floor(S.size / 2), y: Math.floor(S.size / 2) };
-    $('scoreBox').hidden = true;
+    S.scoring = false; S.dead = null; S.busy = false; S.botToken++; // invalidate any in-flight bot reply
+    $('scoreBox').hidden = true; $('scoreControls').hidden = true;
+    setMascot('idle', S.mode === 'bot' ? t('mascotPlay') : t('mascotHi'));
     buildBoard();
     render();
     setStatus('');
@@ -472,6 +555,27 @@
     localStorage.setItem('baduk.theme', next);
   }
 
+  // ---------- mascot ----------
+  function buildMascot() {
+    var m = $('mascot'); if (!m) return;
+    while (m.firstChild) m.removeChild(m.firstChild);
+    m.appendChild(el('circle', { cx: 32, cy: 35, r: 24, class: 'm-body' }));
+    m.appendChild(el('circle', { cx: 19, cy: 41, r: 3, class: 'm-cheek' }));
+    m.appendChild(el('circle', { cx: 45, cy: 41, r: 3, class: 'm-cheek' }));
+    mEyeL = el('path', { class: 'm-line' }); m.appendChild(mEyeL);
+    mEyeR = el('path', { class: 'm-line' }); m.appendChild(mEyeR);
+    mMouth = el('path', { class: 'm-line' }); m.appendChild(mMouth);
+    setMascot('idle');
+  }
+
+  function setMascot(state, msg) {
+    if (!mEyeL) return;
+    var f = MFACE[state] || MFACE.idle;
+    mEyeL.setAttribute('d', f.l); mEyeR.setAttribute('d', f.r); mMouth.setAttribute('d', f.m);
+    $('mascot').setAttribute('data-state', state);
+    if (msg !== undefined) $('mascotMsg').textContent = msg;
+  }
+
   // ---------- init ----------
   function init() {
     svg = $('board');
@@ -479,9 +583,11 @@
     layerStone = $('layerStone'); layerOver = $('layerOver');
     if (S.theme === 'dark' || S.theme === 'light') document.documentElement.setAttribute('data-theme', S.theme);
     var rl = $('repoLink'); if (rl) rl.href = 'https://github.com/XYLOHEAT/baduk';
+    buildMascot();
     applyLang();
     attach();
     setMode('learn'); // start in teaching mode, as requested
+    setMascot('idle', t('mascotHi'));
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

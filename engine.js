@@ -130,12 +130,15 @@
   }
 
   // Area (Chinese) scoring: stones on board + territory enclosed by one colour only.
-  // Assumes all stones on the board are alive (dead stones must be removed by players first).
-  function score(g) {
+  // `dead` (optional Set/array of indices) is treated as removed before scoring, so
+  // players can mark dead stones at game end and have their points count as territory.
+  function score(g, dead) {
     var s = g.size, area = { 1: 0, 2: 0 };
+    var board = g.board;
+    if (dead && dead.forEach) { board = g.board.slice(); dead.forEach(function (i) { board[i] = EMPTY; }); }
     var seen = new Int8Array(s * s);
-    for (var i = 0; i < g.board.length; i++) {
-      if (g.board[i] !== EMPTY) { area[g.board[i]]++; continue; }
+    for (var i = 0; i < board.length; i++) {
+      if (board[i] !== EMPTY) { area[board[i]]++; continue; }
       if (seen[i]) continue;
       // flood the empty region, record which colours border it
       var stack = [i], region = [], borders = {};
@@ -145,7 +148,7 @@
         region.push(cur);
         var ns = neighbors(g, cur);
         for (var k = 0; k < ns.length; k++) {
-          var n = ns[k], v = g.board[n];
+          var n = ns[k], v = board[n];
           if (v === EMPTY) { if (!seen[n]) { seen[n] = 1; stack.push(n); } }
           else borders[v] = true;
         }
@@ -234,6 +237,13 @@
     var sc = G.score(sg);
     assert(sc.black === 9 && sc.winner === BLACK, 'area scoring wrong: ' + JSON.stringify(sc));
 
-    console.log('engine.js self-check PASS: capture, suicide, capturing-suicide, ko, scoring');
+    // dead-stone scoring: a white stone inside black's area, marked dead, becomes black territory
+    var dg = G.createGame(3, 6.5);
+    [[1, 0], [0, 1], [2, 1], [1, 2]].forEach(function (p) { dg.board[G.idx(dg, p[0], p[1])] = BLACK; });
+    dg.board[G.idx(dg, 1, 1)] = WHITE; // a dead white stone in the centre
+    var dsc = G.score(dg, [G.idx(dg, 1, 1)]);
+    assert(dsc.black === 9 && dsc.whiteArea === 0, 'dead-stone scoring wrong: ' + JSON.stringify(dsc));
+
+    console.log('engine.js self-check PASS: capture, suicide, capturing-suicide, ko, scoring, dead-stones');
   }
 })(typeof window !== 'undefined' ? window : this);

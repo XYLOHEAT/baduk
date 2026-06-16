@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self'; worker-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <meta name="color-scheme" content="light dark">
   <meta name="description" content="เรียนและเล่นโกะ (หมากล้อม / 围棋 / Go) ในเบราว์เซอร์ พร้อมโหมดสอนเล่นทีละขั้น">
   <title>围棋 · Go · หมากล้อม — เรียนและเล่น</title>
@@ -62,6 +62,10 @@
       </section>
 
       <aside class="panel">
+        <div class="mascot-row">
+          <svg id="mascot" class="mascot" viewBox="0 0 64 64" aria-hidden="true"></svg>
+          <p id="mascotMsg" class="mascot-msg"></p>
+        </div>
         <h2 id="panelTitle">Learn</h2>
         <p id="panelBody"></p>
 
@@ -95,6 +99,11 @@
           </select>
         </div>
 
+        <div id="scoreControls" hidden>
+          <p id="scoreHint" class="score-hint"></p>
+          <button id="resumeBtn" class="btn" type="button">Resume</button>
+        </div>
+
         <div id="scoreBox" class="score-box" hidden>
           <h3 id="scoreHead">Score</h3>
           <div id="scoreLine" class="line"></div>
@@ -106,6 +115,8 @@
     <footer>
       <span>Open source · zero dependencies · </span>
       <a id="repoLink" href="#" rel="noopener">source</a>
+      <span> · mascot inspired by </span>
+      <a href="https://www.asahi-net.or.jp/~hk6t-itu/igo/goisisan.html" rel="noopener" target="_blank">碁石さん by @tororo2048</a>
     </footer>
   </div>
 
