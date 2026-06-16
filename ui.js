@@ -73,14 +73,9 @@
   var SVGNS = 'http://www.w3.org/2000/svg';
   var PAD = 1, R = 0.46;
 
-  // mascot ("Goishi-san"-style stone guide; original art, expressions toggled by path)
-  var mEyeL, mEyeR, mMouth;
-  var MFACE = {
-    idle:  { l: 'M23 27 v4', r: 'M39 27 v4', m: 'M25 40 q7 5 14 0' },
-    happy: { l: 'M21 30 q3 -5 6 0', r: 'M37 30 q3 -5 6 0', m: 'M24 39 q8 8 16 0' },
-    think: { l: 'M22 28 h4', r: 'M38 28 h4', m: 'M30 42 q2 2 4 0' },
-    oops:  { l: 'M22 28 a2.4 2.4 0 1 0 4.8 0 a2.4 2.4 0 1 0 -4.8 0', r: 'M37 28 a2.4 2.4 0 1 0 4.8 0 a2.4 2.4 0 1 0 -4.8 0', m: 'M29 41 a2.4 2.4 0 1 0 4.8 0 a2.4 2.4 0 1 0 -4.8 0' }
-  };
+  // mascot guide: the licensed 碁石さん art will be dropped into #mascot later
+  // (pending the creator's OK). For now only the speech line (#mascotMsg) is used;
+  // setMascot() also stamps data-state so swapped-in art can animate per reaction.
 
   // ---------- helpers ----------
   function cloneGame(g) {
@@ -555,24 +550,10 @@
     localStorage.setItem('baduk.theme', next);
   }
 
-  // ---------- mascot ----------
-  function buildMascot() {
-    var m = $('mascot'); if (!m) return;
-    while (m.firstChild) m.removeChild(m.firstChild);
-    m.appendChild(el('circle', { cx: 32, cy: 35, r: 24, class: 'm-body' }));
-    m.appendChild(el('circle', { cx: 19, cy: 41, r: 3, class: 'm-cheek' }));
-    m.appendChild(el('circle', { cx: 45, cy: 41, r: 3, class: 'm-cheek' }));
-    mEyeL = el('path', { class: 'm-line' }); m.appendChild(mEyeL);
-    mEyeR = el('path', { class: 'm-line' }); m.appendChild(mEyeR);
-    mMouth = el('path', { class: 'm-line' }); m.appendChild(mMouth);
-    setMascot('idle');
-  }
-
+  // ---------- mascot guide ----------
+  // Only the speech line for now; data-state lets future licensed art react.
   function setMascot(state, msg) {
-    if (!mEyeL) return;
-    var f = MFACE[state] || MFACE.idle;
-    mEyeL.setAttribute('d', f.l); mEyeR.setAttribute('d', f.r); mMouth.setAttribute('d', f.m);
-    $('mascot').setAttribute('data-state', state);
+    var m = $('mascot'); if (m) m.setAttribute('data-state', state);
     if (msg !== undefined) $('mascotMsg').textContent = msg;
   }
 
@@ -583,7 +564,6 @@
     layerStone = $('layerStone'); layerOver = $('layerOver');
     if (S.theme === 'dark' || S.theme === 'light') document.documentElement.setAttribute('data-theme', S.theme);
     var rl = $('repoLink'); if (rl) rl.href = 'https://github.com/XYLOHEAT/baduk';
-    buildMascot();
     applyLang();
     attach();
     setMode('learn'); // start in teaching mode, as requested
