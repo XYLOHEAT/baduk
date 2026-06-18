@@ -7,7 +7,7 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.2.0';
+  var VERSION = '1.3.0';
 
   // ---------- i18n (static strings only; never user input) ----------
   var T = {
@@ -29,7 +29,8 @@
       mascotHi: 'มาเริ่มเรียนกัน!', mascotGood: 'เก่งมาก!', mascotThink: 'ขอคิดแป๊บ…',
       mascotOops: 'อุ๊ปส์ ตรงนั้นเดินไม่ได้', mascotWin: 'จบเกม มานับแต้มกัน', mascotPlay: 'ตาคุณแล้ว วางได้เลย',
       difficulty: 'ระดับความยาก', diffEasy: 'ง่าย', diffMedium: 'กลาง', diffHard: 'ยาก',
-      diffNote19: 'กระดาน 19×19 บอทเล่นระดับเดียว (เร็ว)'
+      diffNote19: 'กระดาน 19×19 บอทเล่นระดับเดียว (เร็ว)',
+      playAs: 'คุณเล่นเป็น', botPlays: 'บอทเล่น', blackFirst: 'ดำเดินก่อน', takeTurns: 'เดินสลับกัน'
     },
     en: {
       modePlay: 'Two players', modeBot: 'Vs bot', modeLearn: 'Learn',
@@ -49,7 +50,8 @@
       mascotHi: "Let's learn!", mascotGood: 'Nice move!', mascotThink: 'Thinking…',
       mascotOops: 'Oops, you can\'t play there', mascotWin: 'Game over, let\'s count', mascotPlay: 'Your turn',
       difficulty: 'Difficulty', diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard',
-      diffNote19: '19×19: the bot plays one fast level'
+      diffNote19: '19×19: the bot plays one fast level',
+      playAs: 'You play', botPlays: 'Bot plays', blackFirst: 'Black moves first', takeTurns: 'take turns'
     }
   };
 
@@ -71,7 +73,8 @@
     dead: null,        // Set of dead stone indices while scoring
     botToken: 0,       // guards against stale worker replies after new game
     difficulty: (['easy', 'medium', 'hard'].indexOf(localStorage.getItem('baduk.difficulty')) >= 0
-      ? localStorage.getItem('baduk.difficulty') : 'medium')
+      ? localStorage.getItem('baduk.difficulty') : 'medium'),
+    humanColor: (localStorage.getItem('baduk.humanColor') === '2' ? WHITE : BLACK) // vs bot: your colour
   };
   function t(k) { return T[S.lang][k]; }
   var botWorker = null;
@@ -185,6 +188,7 @@
     if (S.mode === 'learn') return LESSONS[S.lessonIdx].toMove;
     return S.game.toMove;
   }
+  function botColor() { return E.other(S.humanColor); } // vs bot, the bot takes the other colour
 
   // ---------- sidebar / status ----------
   function setStatus(msg) { var s = $('status'); if (s) s.textContent = msg; }
@@ -212,9 +216,13 @@
       $('hintBtn').hidden = false;
     } else {
       $('panelTitle').textContent = S.mode === 'bot' ? t('modeBot') : t('modePlay');
-      $('panelBody').textContent = S.mode === 'bot'
-        ? (t('youAre') + ' ' + t('black') + '. ' + (S.lang === 'th' ? 'บอทเล่นขาว เดินสลับกัน' : 'The bot plays White. Take turns.'))
-        : (S.lang === 'th' ? 'ผลัดกันเดินบนเครื่องเดียว ดำเริ่มก่อน' : 'Hot-seat on one device. Black starts.');
+      if (S.mode === 'bot') {
+        var hName = S.humanColor === BLACK ? t('black') : t('white');
+        var bName = botColor() === BLACK ? t('black') : t('white');
+        $('panelBody').textContent = t('playAs') + ' ' + hName + ' · ' + t('botPlays') + ' ' + bName + ' · ' + t('blackFirst');
+      } else {
+        $('panelBody').textContent = (S.lang === 'th' ? 'ผลัดกันเดินบนเครื่องเดียว ดำเริ่มก่อน' : 'Hot-seat on one device. Black starts.');
+      }
       $('goalBox').hidden = true;
       $('lessonNav').hidden = true;
       $('gotItBtn').hidden = true;
@@ -254,7 +262,7 @@
     render();
     announceMove(res, color, x, y);
     if (g.passes >= 2) { endGame(); return; }
-    if (S.mode === 'bot' && g.toMove === WHITE) botTurn();
+    if (S.mode === 'bot' && g.toMove === botColor()) botTurn();
   }
 
   function announceMove(res, color, x, y) {
@@ -271,14 +279,14 @@
     setStatus((S.game.lastMove.color === BLACK ? t('black') : t('white')) + ' ' + t('passLabel'));
     render();
     if (r.ended) { endGame(); return; }
-    if (S.mode === 'bot' && S.game.toMove === WHITE) botTurn();
+    if (S.mode === 'bot' && S.game.toMove === botColor()) botTurn();
   }
 
   function undo() {
     if (S.busy || S.scoring || !S.snapshots.length) return;
     S.game = S.snapshots.pop();
     // in bot mode, also undo the bot's reply so the human is to move again
-    if (S.mode === 'bot' && S.game.toMove === WHITE && S.snapshots.length) S.game = S.snapshots.pop();
+    if (S.mode === 'bot' && S.game.toMove === botColor() && S.snapshots.length) S.game = S.snapshots.pop();
     setStatus('');
     render();
   }
@@ -306,21 +314,24 @@
     setStatus(t('botThinks'));
     setMascot('think', t('mascotThink'));
     render();
+    var bc = botColor();
     // If the human just passed and the bot is not losing, pass too so the game
     // ends (standard Go: a pass is answered by a pass when you are content).
     if (S.game.lastMove && S.game.lastMove.pass) {
       var sc = E.score(S.game);
-      if (sc.white >= sc.black) { setTimeout(function () { applyBotMove(null); }, 250); return; }
+      var botPts = bc === BLACK ? sc.black : sc.white;
+      var oppPts = bc === BLACK ? sc.white : sc.black;
+      if (botPts >= oppPts) { setTimeout(function () { applyBotMove(null); }, 250); return; }
     }
     var useMC = (S.difficulty !== 'easy') && S.size <= 13;
     if (useMC) {
       var g = S.game, token = ++S.botToken;
       getWorker().postMessage({
-        board: Array.from(g.board), size: g.size, toMove: WHITE, komi: g.komi,
+        board: Array.from(g.board), size: g.size, toMove: bc, komi: g.komi,
         ko: g.ko, budgetMs: botBudgetMs(), token: token
       });
     } else {
-      setTimeout(function () { applyBotMove(botMove(S.game, WHITE)); }, 200);
+      setTimeout(function () { applyBotMove(botMove(S.game, bc)); }, 200);
     }
   }
 
@@ -331,7 +342,7 @@
         if (e.data.token !== S.botToken) return; // stale reply (new game / mode change)
         applyBotMove(e.data.pass ? null : { x: e.data.x, y: e.data.y });
       };
-      botWorker.onerror = function () { applyBotMove(botMove(S.game, WHITE)); }; // fall back
+      botWorker.onerror = function () { applyBotMove(botMove(S.game, botColor())); }; // fall back
     }
     return botWorker;
   }
@@ -339,11 +350,12 @@
   function applyBotMove(mv) {
     S.busy = false;
     setMascot('idle', t('mascotPlay'));
+    var bc = botColor();
     snapshot();
-    var res = mv ? E.play(S.game, mv.x, mv.y, WHITE) : { ok: false };
+    var res = mv ? E.play(S.game, mv.x, mv.y, bc) : { ok: false };
     if (!res.ok) { S.snapshots.pop(); var r = E.pass(S.game); setStatus(t('botPassed')); render(); if (r.ended) endGame(); return; }
     render();
-    announceMove(res, WHITE, mv.x, mv.y);
+    announceMove(res, bc, mv.x, mv.y);
     if (S.game.passes >= 2) endGame();
   }
 
@@ -532,6 +544,9 @@
     document.querySelectorAll('[data-diff]').forEach(function (b) {
       b.onclick = function () { setDifficulty(b.getAttribute('data-diff')); };
     });
+    document.querySelectorAll('[data-color]').forEach(function (b) {
+      b.onclick = function () { setHumanColor(parseInt(b.getAttribute('data-color'), 10), true); };
+    });
   }
 
   // ---------- mode / lang / theme ----------
@@ -542,6 +557,7 @@
     });
     $('scoreBox').hidden = true;
     $('sizeRow').hidden = (m === 'learn');
+    $('colorRow').hidden = (m !== 'bot');       // colour choice only matters vs the bot
     $('difficultyRow').hidden = (m !== 'bot'); // difficulty only matters vs the bot
     if (m === 'learn') loadLesson(S.lessonIdx);
     else newGame();
@@ -556,6 +572,15 @@
     $('diffNote').hidden = !(S.size >= 19); // difficulty has no effect on 19x19
   }
 
+  function setHumanColor(c, restart) {
+    S.humanColor = c;
+    localStorage.setItem('baduk.humanColor', String(c));
+    document.querySelectorAll('[data-color]').forEach(function (b) {
+      b.setAttribute('aria-pressed', parseInt(b.getAttribute('data-color'), 10) === c ? 'true' : 'false');
+    });
+    if (restart && S.mode === 'bot') newGame(); // who opens changes, so start fresh
+  }
+
   function newGame() {
     S.game = E.createGame(S.size, 6.5);
     S.snapshots = [];
@@ -567,6 +592,8 @@
     buildBoard();
     render();
     setStatus('');
+    // if the human chose White, the bot (Black) opens — Black always moves first
+    if (S.mode === 'bot' && S.game.toMove === botColor()) botTurn();
   }
 
   function applyLang() {
@@ -579,6 +606,9 @@
     $('undoBtn').textContent = t('undo');
     $('countBtn').textContent = t('count');
     $('sizeLabel').textContent = t('size');
+    $('colorLabel').textContent = t('playAs');
+    $('colorBlack').textContent = t('black');
+    $('colorWhite').textContent = t('white');
     $('diffLabel').textContent = t('difficulty');
     $('diffEasy').textContent = t('diffEasy');
     $('diffMed').textContent = t('diffMedium');
@@ -617,6 +647,7 @@
     applyLang();
     attach();
     setDifficulty(S.difficulty); // sync the difficulty control with the stored value
+    setHumanColor(S.humanColor, false); // sync the colour control with the stored value
     setMode('learn'); // start in teaching mode, as requested
     setMascot('idle', t('mascotHi'));
   }

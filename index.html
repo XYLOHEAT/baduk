@@ -8,7 +8,7 @@
   <meta name="color-scheme" content="light dark">
   <meta name="description" content="เรียนและเล่นโกะ (หมากล้อม / 围棋 / Go) ในเบราว์เซอร์ พร้อมโหมดสอนเล่นทีละขั้น">
   <title>围棋 · Go · หมากล้อม — เรียนและเล่น</title>
-  <link rel="stylesheet" href="styles.css?v=1.2.0">
+  <link rel="stylesheet" href="styles.css?v=1.3.0">
 </head>
 <body>
   <div class="wrap">
@@ -91,6 +91,14 @@
           <span id="capWhite">White captured: 0</span>
         </div>
 
+        <div id="colorRow" class="diff-row" hidden>
+          <span id="colorLabel" class="diff-label">You play</span>
+          <div class="modes diff-seg" role="group" aria-labelledby="colorLabel">
+            <button id="colorBlack" data-color="1" type="button" aria-pressed="true">Black</button>
+            <button id="colorWhite" data-color="2" type="button" aria-pressed="false">White</button>
+          </div>
+        </div>
+
         <div id="difficultyRow" class="diff-row" hidden>
           <span id="diffLabel" class="diff-label">Difficulty</span>
           <div class="modes diff-seg" role="group" aria-labelledby="diffLabel">
@@ -131,8 +139,8 @@
   </div>
 
   <!-- ?v= cache-busts on each release; bump together with VERSION in ui.js / worker.js -->
-  <script src="engine.js?v=1.2.0"></script>
-  <script src="lessons.js?v=1.2.0"></script>
-  <script src="ui.js?v=1.2.0"></script>
+  <script src="engine.js?v=1.3.0"></script>
+  <script src="lessons.js?v=1.3.0"></script>
+  <script src="ui.js?v=1.3.0"></script>
 </body>
 </html>
