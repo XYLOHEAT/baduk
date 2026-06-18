@@ -7,7 +7,7 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.4.0';
+  var VERSION = '1.4.1';
 
   // ---------- i18n (static strings only; never user input) ----------
   var T = {
@@ -319,24 +319,25 @@
     setMascot('think', t('mascotThink'));
     render();
     var bc = botColor();
+    var token = ++S.botToken;                 // one token per bot turn; every async path checks it
     // If the human just passed and the bot is not losing, pass too so the game
     // ends (standard Go: a pass is answered by a pass when you are content).
     if (S.game.lastMove && S.game.lastMove.pass) {
       var sc = E.score(S.game);
       var botPts = bc === BLACK ? sc.black : sc.white;
       var oppPts = bc === BLACK ? sc.white : sc.black;
-      if (botPts >= oppPts) { setTimeout(function () { applyBotMove(null); }, 250); return; }
+      if (botPts >= oppPts) { setTimeout(function () { if (token === S.botToken) applyBotMove(null); }, 250); return; }
     }
-    if (S.difficulty === 'neural') { neuralTurn(bc); return; }
+    if (S.difficulty === 'neural') { neuralTurn(bc, token); return; }
     var useMC = (S.difficulty !== 'easy') && S.size <= 13;
     if (useMC) {
-      var g = S.game, token = ++S.botToken;
+      var g = S.game;
       getWorker().postMessage({
         board: Array.from(g.board), size: g.size, toMove: bc, komi: g.komi,
         ko: g.ko, budgetMs: botBudgetMs(), token: token
       });
     } else {
-      setTimeout(function () { applyBotMove(botMove(S.game, bc)); }, 200);
+      setTimeout(function () { if (token === S.botToken) applyBotMove(botMove(S.game, bc)); }, 200);
     }
   }
 
@@ -347,7 +348,7 @@
         if (e.data.token !== S.botToken) return; // stale reply (new game / mode change)
         applyBotMove(e.data.pass ? null : { x: e.data.x, y: e.data.y });
       };
-      botWorker.onerror = function () { applyBotMove(botMove(S.game, botColor())); }; // fall back
+      botWorker.onerror = function () { if (S.busy) applyBotMove(botMove(S.game, botColor())); }; // recover only if a turn is live
     }
     return botWorker;
   }
@@ -358,14 +359,18 @@
     if (neural) return neural.ready;
     var worker = new Worker('neural-worker.js?v=' + VERSION, { type: 'module' });
     var obj = { worker: worker };
+    obj.initialized = false;
     obj.ready = new Promise(function (resolve, reject) {
       worker.onmessage = function (ev) {
         var m = ev.data;
-        if (m.type === 'katago:init_result') { if (m.ok) resolve(); else reject(new Error(m.error || 'init failed')); return; }
+        if (m.type === 'katago:init_result') { if (m.ok) { obj.initialized = true; resolve(); } else reject(new Error(m.error || 'init failed')); return; }
         if (m.type === 'katago:analyze_result') { onNeuralResult(m); return; }
         // katago:analyze_update progress — ignore
       };
-      worker.onerror = function () { reject(new Error('neural worker error')); };
+      worker.onerror = function () {
+        if (!obj.initialized) { reject(new Error('neural worker error')); }
+        else if (S.busy) { setStatus(t('neuralFail')); applyBotMove(botMove(S.game, botColor())); } // recover a stuck analysis
+      };
     });
     setStatus(t('neuralLoading'));
     setMascot('think', t('neuralLoading'));
@@ -374,10 +379,9 @@
     return obj.ready;
   }
 
-  function neuralTurn(bc) {
-    var token = ++S.botToken;
+  function neuralTurn(bc, token) {
     ensureNeural().then(function () {
-      if (token !== S.botToken) return;          // stale (new game / mode change)
+      if (token !== S.botToken) return;          // stale (new game / mode / difficulty change)
       setStatus(t('botThinks'));
       neural.worker.postMessage({
         type: 'katago:analyze', id: token, modelUrl: 'models/katago-small.bin.gz',
@@ -394,10 +398,11 @@
 
   function onNeuralResult(m) {
     if (m.id !== S.botToken) return;             // stale result
+    if (!m.ok) { applyBotMove(botMove(S.game, botColor())); return; } // analysis failed -> greedy fallback, not a pass
     var mv = null;
-    if (m.ok && m.analysis && m.analysis.moves && m.analysis.moves.length) {
+    if (m.analysis && m.analysis.moves && m.analysis.moves.length) {
       var b = m.analysis.moves[0];
-      if (b.x >= 0 && b.y >= 0 && b.x < S.size && b.y < S.size) mv = { x: b.x, y: b.y }; // else off-board -> pass
+      if (b.x >= 0 && b.y >= 0 && b.x < S.size && b.y < S.size) mv = { x: b.x, y: b.y }; // else off-board -> genuine pass
     }
     applyBotMove(mv);
   }
@@ -630,6 +635,7 @@
 
   function setDifficulty(d) {
     S.difficulty = d;
+    S.botToken++; // invalidate any in-flight bot move so a tier switch mid-think can't land a stale move
     localStorage.setItem('baduk.difficulty', d);
     document.querySelectorAll('[data-diff]').forEach(function (b) {
       b.setAttribute('aria-pressed', b.getAttribute('data-diff') === d ? 'true' : 'false');

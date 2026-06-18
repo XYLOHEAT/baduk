@@ -45,9 +45,10 @@ A small KataGo test network (`g170-b6c96-s175395328-d26788732`) from the
 https://github.com/lightvector/KataGo — networks are released for free use.
 
 ## How neural-worker.js was built (reproducible)
+Pinned to web-katrain commit `ac761de06a5b10e5950721f37de9d7bc0f46a47a`.
 ```
-git clone --depth 1 https://github.com/Sir-Teo/web-katrain
-cd web-katrain && npm install
+git clone https://github.com/Sir-Teo/web-katrain
+cd web-katrain && git checkout ac761de06a5b10e5950721f37de9d7bc0f46a47a && npm install
 npx esbuild src/engine/katago/worker.ts --bundle --format=esm --platform=browser \
   --target=es2020 '--define:import.meta.env={"BASE_URL":"/","DEV":false,"PROD":true,"MODE":"production"}' \
   --outfile=neural-worker.js

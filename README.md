@@ -45,7 +45,7 @@ node engine.js
 
 ## Security
 
-No backend, no network calls, no external hosts. Strict `Content-Security-Policy`: `default-src 'none'`, `script-src 'self' 'wasm-unsafe-eval'` (TF.js WASM), `connect-src 'self'` (so the neural worker can fetch only same-origin assets — it cannot phone home). The neural engine runs in a sandboxed Web Worker. CI uses a least-privilege token and SHA-pinned official actions. Third-party neural components are vendored and pinned; see `THIRD_PARTY_NOTICES.md`.
+No backend, no network calls, no external hosts. The document has a strict `Content-Security-Policy` (`default-src 'none'`, `script-src 'self' 'wasm-unsafe-eval'`, `connect-src 'self'`). Because Web Workers are **not** governed by the document's `<meta>` CSP, the neural worker is constrained separately by a `Content-Security-Policy: connect-src 'self'` **HTTP header** (`_headers`) on `neural-worker.js`, so the vendored engine can fetch only same-origin assets and cannot phone home. The neural engine runs in a sandboxed Web Worker. CI uses a least-privilege token and SHA-pinned official actions. Third-party neural components are vendored and pinned (`THIRD_PARTY_NOTICES.md`).
 
 ## License
 

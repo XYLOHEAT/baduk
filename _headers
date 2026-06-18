@@ -8,6 +8,15 @@
   Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Resource-Policy: same-origin
 
+# Workers are NOT governed by the document's <meta> CSP — their CSP comes from the
+# HTTP header on the worker script response. Set connect-src 'self' here so the
+# vendored neural worker can fetch only same-origin assets (no phone-home / exfil).
+# Only connect-src is constrained, so TF.js WASM/blob internals keep working.
+/neural-worker.js
+  Content-Security-Policy: connect-src 'self'
+/worker.js
+  Content-Security-Policy: connect-src 'self'
+
 # big, content-stable neural assets: cache hard
 /models/*
   Cache-Control: public, max-age=31536000, immutable

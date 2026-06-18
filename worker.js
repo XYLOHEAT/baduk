@@ -7,7 +7,7 @@
  *   (KataGo WASM) only if real dan-level strength is ever required.
  */
 /* global GoEngine, importScripts, postMessage, onmessage */
-importScripts('engine.js?v=1.3.0'); // keep in sync with VERSION (cache-bust)
+importScripts('engine.js?v=1.4.1'); // keep in sync with VERSION (cache-bust)
 var E = GoEngine, EMPTY = E.EMPTY;
 
 function isEye(g, i, color) {
