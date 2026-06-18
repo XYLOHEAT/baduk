@@ -7,7 +7,7 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.3.0';
+  var VERSION = '1.4.0';
 
   // ---------- i18n (static strings only; never user input) ----------
   var T = {
@@ -28,8 +28,10 @@
       resume: 'เล่นต่อ', scoringHint: 'แตะกลุ่มหมากที่ “ตาย” เพื่อนำออก แล้วดูแต้มด้านล่าง',
       mascotHi: 'มาเริ่มเรียนกัน!', mascotGood: 'เก่งมาก!', mascotThink: 'ขอคิดแป๊บ…',
       mascotOops: 'อุ๊ปส์ ตรงนั้นเดินไม่ได้', mascotWin: 'จบเกม มานับแต้มกัน', mascotPlay: 'ตาคุณแล้ว วางได้เลย',
-      difficulty: 'ระดับความยาก', diffEasy: 'ง่าย', diffMedium: 'กลาง', diffHard: 'ยาก',
-      diffNote19: 'กระดาน 19×19 บอทเล่นระดับเดียว (เร็ว)',
+      difficulty: 'ระดับความยาก', diffEasy: 'ง่าย', diffMedium: 'กลาง', diffHard: 'ยาก', diffNeural: 'นิวรัล',
+      diffNote19: '19×19: โหมดเร็วใช้ greedy · นิวรัลเล่นได้แต่ช้ากว่า',
+      neuralLoading: 'กำลังโหลดเอนจินนิวรัล (KataGo)… ครั้งแรกอาจช้า',
+      neuralFail: 'โหลดนิวรัลไม่สำเร็จ ใช้บอทปกติแทน',
       playAs: 'คุณเล่นเป็น', botPlays: 'บอทเล่น', blackFirst: 'ดำเดินก่อน', takeTurns: 'เดินสลับกัน'
     },
     en: {
@@ -49,8 +51,10 @@
       resume: 'Resume', scoringHint: 'Tap “dead” groups to remove them, then read the score below',
       mascotHi: "Let's learn!", mascotGood: 'Nice move!', mascotThink: 'Thinking…',
       mascotOops: 'Oops, you can\'t play there', mascotWin: 'Game over, let\'s count', mascotPlay: 'Your turn',
-      difficulty: 'Difficulty', diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard',
-      diffNote19: '19×19: the bot plays one fast level',
+      difficulty: 'Difficulty', diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffNeural: 'Neural',
+      diffNote19: '19×19: fast tiers use greedy · neural works but is slower',
+      neuralLoading: 'Loading neural engine (KataGo)… first time may be slow',
+      neuralFail: 'Neural failed to load; using the regular bot',
       playAs: 'You play', botPlays: 'Bot plays', blackFirst: 'Black moves first', takeTurns: 'take turns'
     }
   };
@@ -72,7 +76,7 @@
     scoringOver: false,// true when scoring was triggered by game end (two passes)
     dead: null,        // Set of dead stone indices while scoring
     botToken: 0,       // guards against stale worker replies after new game
-    difficulty: (['easy', 'medium', 'hard'].indexOf(localStorage.getItem('baduk.difficulty')) >= 0
+    difficulty: (['easy', 'medium', 'hard', 'neural'].indexOf(localStorage.getItem('baduk.difficulty')) >= 0
       ? localStorage.getItem('baduk.difficulty') : 'medium'),
     humanColor: (localStorage.getItem('baduk.humanColor') === '2' ? WHITE : BLACK) // vs bot: your colour
   };
@@ -323,6 +327,7 @@
       var oppPts = bc === BLACK ? sc.white : sc.black;
       if (botPts >= oppPts) { setTimeout(function () { applyBotMove(null); }, 250); return; }
     }
+    if (S.difficulty === 'neural') { neuralTurn(bc); return; }
     var useMC = (S.difficulty !== 'easy') && S.size <= 13;
     if (useMC) {
       var g = S.game, token = ++S.botToken;
@@ -345,6 +350,66 @@
       botWorker.onerror = function () { applyBotMove(botMove(S.game, botColor())); }; // fall back
     }
     return botWorker;
+  }
+
+  // ---------- neural bot (KataGo via vendored worker; lazy-loaded) ----------
+  var neural = null; // { worker, ready: Promise }
+  function ensureNeural() {
+    if (neural) return neural.ready;
+    var worker = new Worker('neural-worker.js?v=' + VERSION, { type: 'module' });
+    var obj = { worker: worker };
+    obj.ready = new Promise(function (resolve, reject) {
+      worker.onmessage = function (ev) {
+        var m = ev.data;
+        if (m.type === 'katago:init_result') { if (m.ok) resolve(); else reject(new Error(m.error || 'init failed')); return; }
+        if (m.type === 'katago:analyze_result') { onNeuralResult(m); return; }
+        // katago:analyze_update progress — ignore
+      };
+      worker.onerror = function () { reject(new Error('neural worker error')); };
+    });
+    setStatus(t('neuralLoading'));
+    setMascot('think', t('neuralLoading'));
+    worker.postMessage({ type: 'katago:init', modelUrl: 'models/katago-small.bin.gz' });
+    neural = obj;
+    return obj.ready;
+  }
+
+  function neuralTurn(bc) {
+    var token = ++S.botToken;
+    ensureNeural().then(function () {
+      if (token !== S.botToken) return;          // stale (new game / mode change)
+      setStatus(t('botThinks'));
+      neural.worker.postMessage({
+        type: 'katago:analyze', id: token, modelUrl: 'models/katago-small.bin.gz',
+        board: toIntersections(S.game), currentPlayer: bc === BLACK ? 'black' : 'white',
+        komi: S.game.komi, rules: 'chinese',
+        visits: 160, maxTimeMs: S.size <= 13 ? 3000 : 6000, moveHistory: []
+      });
+    }).catch(function () {
+      if (token !== S.botToken) return;
+      setStatus(t('neuralFail'));                // graceful fallback to the greedy bot
+      applyBotMove(botMove(S.game, bc));
+    });
+  }
+
+  function onNeuralResult(m) {
+    if (m.id !== S.botToken) return;             // stale result
+    var mv = null;
+    if (m.ok && m.analysis && m.analysis.moves && m.analysis.moves.length) {
+      var b = m.analysis.moves[0];
+      if (b.x >= 0 && b.y >= 0 && b.x < S.size && b.y < S.size) mv = { x: b.x, y: b.y }; // else off-board -> pass
+    }
+    applyBotMove(mv);
+  }
+
+  function toIntersections(g) { // engine board -> KataGo BoardState (board[y][x] = 'black'|'white'|null)
+    var n = g.size, out = [];
+    for (var y = 0; y < n; y++) {
+      var row = [];
+      for (var x = 0; x < n; x++) { var v = g.board[y * n + x]; row.push(v === BLACK ? 'black' : v === WHITE ? 'white' : null); }
+      out.push(row);
+    }
+    return out;
   }
 
   function applyBotMove(mv) {
@@ -613,6 +678,7 @@
     $('diffEasy').textContent = t('diffEasy');
     $('diffMed').textContent = t('diffMedium');
     $('diffHard').textContent = t('diffHard');
+    $('diffNeural').textContent = t('diffNeural');
     $('diffNote').textContent = t('diffNote19');
     $('hintBtn').textContent = t('hint');
     $('gotItBtn').textContent = t('gotIt');

@@ -1,0 +1,15 @@
+# Cloudflare Pages headers.
+# COOP+COEP enable cross-origin isolation -> SharedArrayBuffer -> multithreaded
+# WASM fallback for the Neural tier. All app resources are same-origin, so CORP
+# same-origin keeps every asset loadable under COEP. (GitHub Pages ignores this file;
+# there WebGPU still works, WASM falls back to single-thread.)
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Resource-Policy: same-origin
+
+# big, content-stable neural assets: cache hard
+/models/*
+  Cache-Control: public, max-age=31536000, immutable
+/tfjs/*
+  Cache-Control: public, max-age=31536000, immutable

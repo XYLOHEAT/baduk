@@ -4,19 +4,25 @@ A small, dependency-free web app to **learn and play Go** (Baduk / Weiqi / ห�
 
 - **Learn mode** — 7 interactive lessons: placing stones, liberties, capture, no-suicide, ko, two-eyes life, territory & scoring.
 - **Two players** — hot-seat on one device.
-- **Vs bot** — a lightweight greedy opponent for beginners.
-- Board sizes **9 / 13 / 19**, full rules: capture, suicide ban, simple ko, area (Chinese) scoring + komi.
+- **Vs bot** — pick your colour (Black/White) and a difficulty:
+  - **Easy** greedy · **Medium/Hard** Monte-Carlo (Web Worker) · **Neural** KataGo (TensorFlow.js, WebGPU/WASM)
+- **Manual dead-stone scoring** at game end (two passes), area (Chinese) scoring + komi.
+- Board sizes **9 / 13 / 19**, full rules: capture, suicide ban, simple ko.
 - Bilingual **ไทย / English**, light + dark themes, keyboard play (arrow keys + Enter), reduced-motion aware.
 
 ## Stack
 
-Vanilla HTML + CSS + JavaScript. **Zero dependencies, no build step.** Open `index.html` or serve the folder.
+The core game is vanilla HTML + CSS + JS, **no build step**. The only third-party
+code is the **optional Neural tier**, which lazy-loads `neural-worker.js` + a KataGo
+model only when selected (see `THIRD_PARTY_NOTICES.md`).
 
 | File | Role |
 |------|------|
 | `engine.js` | Pure rules engine (no DOM). Run `node engine.js` for the self-check. |
 | `lessons.js` | Teaching-mode content (data + tiny predicates). |
-| `ui.js` | Board rendering (SVG), interaction, modes, bot. |
+| `ui.js` | Board rendering (SVG), interaction, modes, bots. |
+| `worker.js` | Monte-Carlo bot (Medium/Hard), runs off the main thread. |
+| `neural-worker.js` · `models/` · `tfjs/` | Optional KataGo neural bot (bundled from MIT [web-katrain](https://github.com/Sir-Teo/web-katrain); TF.js; KataGo net). Loaded only for the Neural tier. |
 | `index.html` / `styles.css` | Page + theme. |
 
 ## Run locally
@@ -34,13 +40,13 @@ node engine.js
 
 ## Deploy
 
-- **GitHub Pages:** push to `main`; the workflow in `.github/workflows/deploy.yml` publishes the site (or enable Pages → Deploy from branch, root).
-- **Cloudflare Pages:** create a project, no build command, output directory `/`.
+- **Cloudflare Pages (recommended for the Neural tier):** no build command, output directory `/`. The `_headers` file sets COOP/COEP so cross-origin isolation enables multithreaded WASM (faster neural fallback when WebGPU is absent).
+- **GitHub Pages:** the workflow in `.github/workflows/deploy.yml` publishes on push to `main`. Neural still works via WebGPU; WASM fallback runs single-threaded (GitHub Pages can't set COOP/COEP headers).
 
 ## Security
 
-No backend, no network calls, no third-party scripts. A strict `Content-Security-Policy` (`default-src 'none'`, scripts/styles `'self'` only) is set in `index.html`. CI uses a least-privilege token and SHA-pinned official actions.
+No backend, no network calls, no external hosts. Strict `Content-Security-Policy`: `default-src 'none'`, `script-src 'self' 'wasm-unsafe-eval'` (TF.js WASM), `connect-src 'self'` (so the neural worker can fetch only same-origin assets — it cannot phone home). The neural engine runs in a sandboxed Web Worker. CI uses a least-privilege token and SHA-pinned official actions. Third-party neural components are vendored and pinned; see `THIRD_PARTY_NOTICES.md`.
 
 ## License
 
-MIT.
+MIT (this app). Bundled neural components retain their own licenses — see `THIRD_PARTY_NOTICES.md`.
