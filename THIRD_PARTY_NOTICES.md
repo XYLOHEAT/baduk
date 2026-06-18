@@ -39,10 +39,13 @@ TensorFlow.js by Google, licensed under the **Apache License 2.0**.
 https://github.com/tensorflow/tfjs — see the Apache-2.0 license and NOTICE at
 that repository. Also bundled: `pako` (MIT) and `jszip` (MIT or GPLv3, used here under MIT).
 
-## models/katago-small.bin.gz
-A small KataGo test network (`g170-b6c96-s175395328-d26788732`) from the
-**KataGo** project by David Wu (lightvector).
-https://github.com/lightvector/KataGo — networks are released for free use.
+## KataGo networks
+From the **KataGo** project by David Wu (lightvector) — networks are released for free use.
+https://github.com/lightvector/KataGo · https://katagotraining.org/
+- **Active (Neural tier):** `kata1-b18c384nbt-s9996604416-d4316597426` (~93MB, dan strength).
+  Too large for a Pages static file (25 MiB limit), so it is stored in Cloudflare R2
+  and streamed same-origin via `functions/models/[[path]].js`. Not committed to git.
+- `models/katago-small.bin.gz` (`g170-b6c96`, 3.8MB) remains as a small static fallback.
 
 ## How neural-worker.js was built (reproducible)
 Pinned to web-katrain commit `ac761de06a5b10e5950721f37de9d7bc0f46a47a`.

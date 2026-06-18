@@ -7,7 +7,9 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.4.1';
+  var VERSION = '1.4.2';
+  // KataGo dan net (b18c384nbt, ~93MB) served same-origin from R2 via functions/models/.
+  var NEURAL_MODEL = 'models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz';
 
   // ---------- i18n (static strings only; never user input) ----------
   var T = {
@@ -30,7 +32,7 @@
       mascotOops: 'อุ๊ปส์ ตรงนั้นเดินไม่ได้', mascotWin: 'จบเกม มานับแต้มกัน', mascotPlay: 'ตาคุณแล้ว วางได้เลย',
       difficulty: 'ระดับความยาก', diffEasy: 'ง่าย', diffMedium: 'กลาง', diffHard: 'ยาก', diffNeural: 'นิวรัล',
       diffNote19: '19×19: โหมดเร็วใช้ greedy · นิวรัลเล่นได้แต่ช้ากว่า',
-      neuralLoading: 'กำลังโหลดเอนจินนิวรัล (KataGo)… ครั้งแรกอาจช้า',
+      neuralLoading: 'กำลังโหลดเอนจินนิวรัล KataGo ระดับดั้น (~90MB) … ครั้งแรกช้า แล้วจะ cache ไว้',
       neuralFail: 'โหลดนิวรัลไม่สำเร็จ ใช้บอทปกติแทน',
       playAs: 'คุณเล่นเป็น', botPlays: 'บอทเล่น', blackFirst: 'ดำเดินก่อน', takeTurns: 'เดินสลับกัน'
     },
@@ -53,7 +55,7 @@
       mascotOops: 'Oops, you can\'t play there', mascotWin: 'Game over, let\'s count', mascotPlay: 'Your turn',
       difficulty: 'Difficulty', diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffNeural: 'Neural',
       diffNote19: '19×19: fast tiers use greedy · neural works but is slower',
-      neuralLoading: 'Loading neural engine (KataGo)… first time may be slow',
+      neuralLoading: 'Loading dan-level KataGo engine (~90MB)… slow first time, then cached',
       neuralFail: 'Neural failed to load; using the regular bot',
       playAs: 'You play', botPlays: 'Bot plays', blackFirst: 'Black moves first', takeTurns: 'take turns'
     }
@@ -374,7 +376,7 @@
     });
     setStatus(t('neuralLoading'));
     setMascot('think', t('neuralLoading'));
-    worker.postMessage({ type: 'katago:init', modelUrl: 'models/katago-small.bin.gz' });
+    worker.postMessage({ type: 'katago:init', modelUrl: NEURAL_MODEL });
     neural = obj;
     return obj.ready;
   }
@@ -384,10 +386,10 @@
       if (token !== S.botToken) return;          // stale (new game / mode / difficulty change)
       setStatus(t('botThinks'));
       neural.worker.postMessage({
-        type: 'katago:analyze', id: token, modelUrl: 'models/katago-small.bin.gz',
+        type: 'katago:analyze', id: token, modelUrl: NEURAL_MODEL,
         board: toIntersections(S.game), currentPlayer: bc === BLACK ? 'black' : 'white',
         komi: S.game.komi, rules: 'chinese',
-        visits: 160, maxTimeMs: S.size <= 13 ? 3000 : 6000, moveHistory: []
+        visits: 256, maxTimeMs: S.size <= 9 ? 4000 : S.size <= 13 ? 6000 : 10000, moveHistory: []
       });
     }).catch(function () {
       if (token !== S.botToken) return;
