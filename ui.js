@@ -7,6 +7,7 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
+  var VERSION = '1.2.0';
 
   // ---------- i18n (static strings only; never user input) ----------
   var T = {
@@ -66,6 +67,7 @@
     lessonIdx: 0,
     busy: false,
     scoring: false,    // dead-stone marking mode at game end
+    scoringOver: false,// true when scoring was triggered by game end (two passes)
     dead: null,        // Set of dead stone indices while scoring
     botToken: 0,       // guards against stale worker replies after new game
     difficulty: (['easy', 'medium', 'hard'].indexOf(localStorage.getItem('baduk.difficulty')) >= 0
@@ -263,7 +265,7 @@
   }
 
   function doPass() {
-    if (S.busy) return;
+    if (S.busy || S.scoring) return; // not while counting at game end
     snapshot();
     var r = E.pass(S.game);
     setStatus((S.game.lastMove.color === BLACK ? t('black') : t('white')) + ' ' + t('passLabel'));
@@ -273,7 +275,7 @@
   }
 
   function undo() {
-    if (S.busy || !S.snapshots.length) return;
+    if (S.busy || S.scoring || !S.snapshots.length) return;
     S.game = S.snapshots.pop();
     // in bot mode, also undo the bot's reply so the human is to move again
     if (S.mode === 'bot' && S.game.toMove === WHITE && S.snapshots.length) S.game = S.snapshots.pop();
@@ -304,6 +306,12 @@
     setStatus(t('botThinks'));
     setMascot('think', t('mascotThink'));
     render();
+    // If the human just passed and the bot is not losing, pass too so the game
+    // ends (standard Go: a pass is answered by a pass when you are content).
+    if (S.game.lastMove && S.game.lastMove.pass) {
+      var sc = E.score(S.game);
+      if (sc.white >= sc.black) { setTimeout(function () { applyBotMove(null); }, 250); return; }
+    }
     var useMC = (S.difficulty !== 'easy') && S.size <= 13;
     if (useMC) {
       var g = S.game, token = ++S.botToken;
@@ -318,7 +326,7 @@
 
   function getWorker() {
     if (!botWorker) {
-      botWorker = new Worker('worker.js');
+      botWorker = new Worker('worker.js?v=' + VERSION);
       botWorker.onmessage = function (e) {
         if (e.data.token !== S.botToken) return; // stale reply (new game / mode change)
         applyBotMove(e.data.pass ? null : { x: e.data.x, y: e.data.y });
@@ -398,7 +406,7 @@
     S.game.toMove = L.toMove;
     S.snapshots = [];
     S.cursor = { x: Math.floor(L.size / 2), y: Math.floor(L.size / 2) };
-    S.scoring = false; S.dead = null; S.busy = false; S.botToken++;
+    S.scoring = false; S.scoringOver = false; S.dead = null; S.busy = false; S.botToken++;
     $('scoreBox').hidden = true; $('scoreControls').hidden = true;
     buildBoard();
     render();
@@ -408,17 +416,21 @@
   }
 
   // ---------- scoring (manual dead-stone marking + area count) ----------
-  function endGame() { enterScoring(); }
+  // over=true when triggered by game end (two passes); false for a mid-game count.
+  function endGame() {
+    if (!S.scoring) { enterScoring(true); return; }
+    S.scoringOver = true; updateScoreLive(); render(); // upgrade an in-progress count to game-over
+  }
 
-  function enterScoring() {
+  function enterScoring(over) {
     if (S.scoring) return;
     S.scoring = true;
+    S.scoringOver = !!over;
     S.dead = new Set();
     S.hover = null;
     $('scoreControls').hidden = false;
     $('scoreHint').textContent = t('scoringHint');
     $('resumeBtn').textContent = t('resume');
-    setStatus(t('scoringHint'));
     setMascot('happy', t('mascotWin'));
     updateScoreLive();
     render();
@@ -426,6 +438,7 @@
 
   function exitScoring() {
     S.scoring = false;
+    S.scoringOver = false;
     S.dead = null;
     $('scoreControls').hidden = true;
     $('scoreBox').hidden = true;
@@ -448,11 +461,12 @@
     var sc = E.score(S.game, S.dead ? Array.from(S.dead) : null);
     $('scoreBox').hidden = false;
     var who = sc.winner === BLACK ? t('winnerBlack') : sc.winner === WHITE ? t('winnerWhite') : t('tie');
-    $('scoreHead').textContent = t('count');
+    var result = sc.winner === 0 ? who : who + ' ' + t('by') + ' ' + sc.margin.toFixed(1) + ' ' + t('points');
+    $('scoreHead').textContent = S.scoringOver ? t('gameOver') : t('count');
     $('scoreLine').textContent =
       t('black') + ' ' + sc.black + '  ·  ' + t('white') + ' ' + sc.white + ' (' + t('komi') + ' ' + sc.komi + ')';
-    $('scoreWinner').textContent = sc.winner === 0 ? who
-      : who + ' ' + t('by') + ' ' + sc.margin.toFixed(1) + ' ' + t('points');
+    $('scoreWinner').textContent = result;
+    setStatus(S.scoringOver ? (t('gameOver') + ' · ' + result) : t('scoringHint'));
   }
 
   // ---------- pointer + keyboard ----------
@@ -492,7 +506,7 @@
     $('newGameBtn').onclick = function () { if (S.mode === 'learn') loadLesson(S.lessonIdx); else newGame(); };
     $('passBtn').onclick = doPass;
     $('undoBtn').onclick = undo;
-    $('countBtn').onclick = function () { if (!S.busy) enterScoring(); };
+    $('countBtn').onclick = function () { if (!S.busy) enterScoring(false); };
     $('resumeBtn').onclick = exitScoring;
     $('langBtn').onclick = function () { S.lang = S.lang === 'th' ? 'en' : 'th'; localStorage.setItem('baduk.lang', S.lang); applyLang(); render(); };
     $('themeBtn').onclick = toggleTheme;
@@ -546,7 +560,7 @@
     S.game = E.createGame(S.size, 6.5);
     S.snapshots = [];
     S.cursor = { x: Math.floor(S.size / 2), y: Math.floor(S.size / 2) };
-    S.scoring = false; S.dead = null; S.busy = false; S.botToken++; // invalidate any in-flight bot reply
+    S.scoring = false; S.scoringOver = false; S.dead = null; S.busy = false; S.botToken++; // invalidate in-flight bot reply
     $('scoreBox').hidden = true; $('scoreControls').hidden = true;
     $('diffNote').hidden = !(S.size >= 19);
     setMascot('idle', S.mode === 'bot' ? t('mascotPlay') : t('mascotHi'));
@@ -599,6 +613,7 @@
     layerStone = $('layerStone'); layerOver = $('layerOver');
     if (S.theme === 'dark' || S.theme === 'light') document.documentElement.setAttribute('data-theme', S.theme);
     var rl = $('repoLink'); if (rl) rl.href = 'https://github.com/XYLOHEAT/baduk';
+    var ver = $('version'); if (ver) ver.textContent = 'v' + VERSION;
     applyLang();
     attach();
     setDifficulty(S.difficulty); // sync the difficulty control with the stored value
