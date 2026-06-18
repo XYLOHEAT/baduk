@@ -17,8 +17,7 @@
 /worker.js
   Content-Security-Policy: connect-src 'self'
 
-# big, content-stable neural assets: cache hard
-/models/*
-  Cache-Control: public, max-age=31536000, immutable
+# tfjs wasm: cache hard. (Model caching is set by functions/models on R2 hits only,
+# so a transient 404 there is never cached as immutable.)
 /tfjs/*
   Cache-Control: public, max-age=31536000, immutable
