@@ -6,3 +6,4 @@ codeql-results.sarif
 static_analysis_semgrep*/
 # big dan net (93MB) is served from R2, not committed
 models/kata1-*.bin.gz
+.wrangler/
