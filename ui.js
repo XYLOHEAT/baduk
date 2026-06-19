@@ -7,7 +7,7 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.6.1';
+  var VERSION = '1.7.0';
   // KataGo dan net (b18c384nbt, ~93MB) served same-origin from R2 via functions/models/.
   var NEURAL_MODEL = 'models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz';
 
@@ -152,18 +152,33 @@
       });
     }
 
+    // mascot stones: precompute each group's liberty count so a group in
+    // atari (exactly 1 liberty — about to be captured) can show a scared face
+    var libOf = null;
+    if (S.stoneStyle === 'mascot') {
+      libOf = {};
+      for (var gi = 0; gi < g.board.length; gi++) {
+        if (g.board[gi] === EMPTY || libOf[gi] !== undefined) continue;
+        var grp = E.group(g, gi), lc = grp.liberties.length, s;
+        for (s = 0; s < grp.stones.length; s++) libOf[grp.stones[s]] = lc;
+      }
+    }
+
     // stones
     for (var i = 0; i < g.board.length; i++) {
       var v = g.board[i];
       if (v === EMPTY) continue;
       var x = i % n, y = (i - x) / n;
       var cls = 'stone ' + (v === BLACK ? 'black' : 'white');
-      if (g.lastMove && !g.lastMove.pass && g.lastMove.x === x && g.lastMove.y === y) cls += ' just-placed';
+      var justPlaced = g.lastMove && !g.lastMove.pass && g.lastMove.x === x && g.lastMove.y === y;
+      if (justPlaced) cls += ' just-placed';
       if (S.scoring && S.dead && S.dead.has(i)) cls += ' dead';
       if (S.stoneStyle === 'mascot') {
+        // scared in atari, happy when just placed, otherwise the neutral face
+        var face = libOf[i] === 1 ? '-scared' : (justPlaced ? '-happy' : '');
         layerStone.appendChild(el('image', {
           x: px(x) - R, y: px(y) - R, width: 2 * R, height: 2 * R,
-          href: 'assets/mascot/stone-' + (v === BLACK ? 'black' : 'white') + '.png',
+          href: 'assets/mascot/stone-' + (v === BLACK ? 'black' : 'white') + face + '.png',
           preserveAspectRatio: 'xMidYMid meet', class: cls
         }));
       } else {
