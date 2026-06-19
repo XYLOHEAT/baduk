@@ -7,7 +7,7 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.7.0';
+  var VERSION = '1.8.0';
   // KataGo dan net (b18c384nbt, ~93MB) served same-origin from R2 via functions/models/.
   var NEURAL_MODEL = 'models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz';
 
@@ -174,8 +174,12 @@
       if (justPlaced) cls += ' just-placed';
       if (S.scoring && S.dead && S.dead.has(i)) cls += ' dead';
       if (S.stoneStyle === 'mascot') {
-        // scared in atari, happy when just placed, otherwise the neutral face
-        var face = libOf[i] === 1 ? '-scared' : (justPlaced ? '-happy' : '');
+        // full emotional arc: dead > atari (scared) > just-placed (happy) > low liberties (worried) > neutral
+        var face = '';
+        if (S.scoring && S.dead && S.dead.has(i)) face = '-dead';
+        else if (libOf[i] === 1) face = '-scared';
+        else if (justPlaced) face = '-happy';
+        else if (libOf[i] === 2) face = '-worried';
         layerStone.appendChild(el('image', {
           x: px(x) - R, y: px(y) - R, width: 2 * R, height: 2 * R,
           href: 'assets/mascot/stone-' + (v === BLACK ? 'black' : 'white') + face + '.png',
