@@ -47,6 +47,16 @@ https://github.com/lightvector/KataGo · https://katagotraining.org/
   and streamed same-origin via `functions/models/[[path]].js`. Not committed to git.
   (No static `models/` directory is shipped, so the Function owns the `/models/*` route.)
 
+## 碁石さん (Goishi-san) mascot artwork
+The teaching mascot images in `assets/mascot/` (idle/happy/think/oops) are the
+**「碁石さん」** character by **とろろ (tororo, @tororo2048)**.
+Source: https://tororoigo.web.fc2.com/ · original art page:
+https://www.asahi-net.or.jp/~hk6t-itu/igo/goisisan.html
+
+Used with the creator's explicit permission (email, 2026-06-17) for this
+non-commercial, educational Go-learning web app. Credited in the footer with a
+link back to the creator's site. Not redistributed as standalone artwork.
+
 ## How neural-worker.js was built (reproducible)
 Pinned to web-katrain commit `ac761de06a5b10e5950721f37de9d7bc0f46a47a`.
 ```

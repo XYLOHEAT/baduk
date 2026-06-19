@@ -8,7 +8,7 @@
   <meta name="color-scheme" content="light dark">
   <meta name="description" content="เรียนและเล่นโกะ (หมากล้อม / 围棋 / Go) ในเบราว์เซอร์ พร้อมโหมดสอนเล่นทีละขั้น">
   <title>围棋 · Go · หมากล้อม — เรียนและเล่น</title>
-  <link rel="stylesheet" href="styles.css?v=1.4.2">
+  <link rel="stylesheet" href="styles.css?v=1.5.0">
 </head>
 <body>
   <div class="wrap">
@@ -63,8 +63,8 @@
 
       <aside class="panel">
         <div class="mascot-row">
-          <!-- licensed 碁石さん art (@tororo2048) drops in here once permission is granted -->
-          <div id="mascot" class="mascot" aria-hidden="true" hidden></div>
+          <!-- 碁石さん art by とろろ (@tororo2048), used with permission — non-commercial, educational. data-state swaps the expression -->
+          <div id="mascot" class="mascot" data-state="idle" aria-hidden="true"></div>
           <p id="mascotMsg" class="mascot-msg"></p>
         </div>
         <h2 id="panelTitle">Learn</h2>
@@ -136,12 +136,13 @@
       <span>Open source · zero dependencies · </span>
       <a id="repoLink" href="#" rel="noopener">source</a>
       <span> · <span id="version"></span></span>
+      <span> · 碁石さん © <a href="https://tororoigo.web.fc2.com/" rel="noopener noreferrer" target="_blank">とろろ</a></span>
     </footer>
   </div>
 
   <!-- ?v= cache-busts on each release; bump together with VERSION in ui.js / worker.js -->
-  <script src="engine.js?v=1.4.2"></script>
-  <script src="lessons.js?v=1.4.2"></script>
-  <script src="ui.js?v=1.4.2"></script>
+  <script src="engine.js?v=1.5.0"></script>
+  <script src="lessons.js?v=1.5.0"></script>
+  <script src="ui.js?v=1.5.0"></script>
 </body>
 </html>

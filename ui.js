@@ -7,7 +7,7 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.4.2';
+  var VERSION = '1.5.0';
   // KataGo dan net (b18c384nbt, ~93MB) served same-origin from R2 via functions/models/.
   var NEURAL_MODEL = 'models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz';
 
