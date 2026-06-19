@@ -8,7 +8,7 @@
   <meta name="color-scheme" content="light dark">
   <meta name="description" content="เรียนและเล่นโกะ (หมากล้อม / 围棋 / Go) ในเบราว์เซอร์ พร้อมโหมดสอนเล่นทีละขั้น">
   <title>围棋 · Go · หมากล้อม — เรียนและเล่น</title>
-  <link rel="stylesheet" href="styles.css?v=1.5.0">
+  <link rel="stylesheet" href="styles.css?v=1.6.0">
 </head>
 <body>
   <div class="wrap">
@@ -119,6 +119,14 @@
           </select>
         </div>
 
+        <div id="stoneRow" class="diff-row">
+          <span id="stoneLabel" class="diff-label">Stones</span>
+          <div class="modes diff-seg" role="group" aria-labelledby="stoneLabel">
+            <button id="stoneNormal" data-stone="normal" type="button" aria-pressed="true">Classic</button>
+            <button id="stoneMascot" data-stone="mascot" type="button" aria-pressed="false">Mascot</button>
+          </div>
+        </div>
+
         <div id="scoreControls" hidden>
           <p id="scoreHint" class="score-hint"></p>
           <button id="resumeBtn" class="btn" type="button">Resume</button>
@@ -141,8 +149,8 @@
   </div>
 
   <!-- ?v= cache-busts on each release; bump together with VERSION in ui.js / worker.js -->
-  <script src="engine.js?v=1.5.0"></script>
-  <script src="lessons.js?v=1.5.0"></script>
-  <script src="ui.js?v=1.5.0"></script>
+  <script src="engine.js?v=1.6.0"></script>
+  <script src="lessons.js?v=1.6.0"></script>
+  <script src="ui.js?v=1.6.0"></script>
 </body>
 </html>

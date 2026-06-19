@@ -7,7 +7,7 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.5.0';
+  var VERSION = '1.6.0';
   // KataGo dan net (b18c384nbt, ~93MB) served same-origin from R2 via functions/models/.
   var NEURAL_MODEL = 'models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz';
 
@@ -26,7 +26,7 @@
       hint: 'คำใบ้', gotIt: 'เข้าใจแล้ว', prev: 'ก่อนหน้า', next: 'ถัดไป',
       lesson: 'บทเรียน', goalLabel: 'เป้าหมาย', wellDone: 'ทำได้ดีมาก',
       allDone: 'จบทุกบทแล้ว! ไปลองเล่นจริงได้เลย', theme: 'สลับธีม', langName: 'EN',
-      passLabel: 'ผ่าน', stoneOnBoard: 'หมากบนกระดาน',
+      passLabel: 'ผ่าน', stoneOnBoard: 'หมากบนกระดาน', stoneStyle: 'แบบหมาก', stoneNormal: 'ปกติ', stoneMascot: 'มาสคอต',
       resume: 'เล่นต่อ', scoringHint: 'แตะกลุ่มหมากที่ “ตาย” เพื่อนำออก แล้วดูแต้มด้านล่าง',
       mascotHi: 'มาเริ่มเรียนกัน!', mascotGood: 'เก่งมาก!', mascotThink: 'ขอคิดแป๊บ…',
       mascotOops: 'อุ๊ปส์ ตรงนั้นเดินไม่ได้', mascotWin: 'จบเกม มานับแต้มกัน', mascotPlay: 'ตาคุณแล้ว วางได้เลย',
@@ -49,7 +49,7 @@
       hint: 'Hint', gotIt: 'Got it', prev: 'Prev', next: 'Next',
       lesson: 'Lesson', goalLabel: 'Goal', wellDone: 'Well done',
       allDone: 'All lessons done! Go play a real game.', theme: 'Theme', langName: 'ไทย',
-      passLabel: 'pass', stoneOnBoard: 'stones on board',
+      passLabel: 'pass', stoneOnBoard: 'stones on board', stoneStyle: 'Stones', stoneNormal: 'Classic', stoneMascot: 'Mascot',
       resume: 'Resume', scoringHint: 'Tap “dead” groups to remove them, then read the score below',
       mascotHi: "Let's learn!", mascotGood: 'Nice move!', mascotThink: 'Thinking…',
       mascotOops: 'Oops, you can\'t play there', mascotWin: 'Game over, let\'s count', mascotPlay: 'Your turn',
@@ -80,7 +80,8 @@
     botToken: 0,       // guards against stale worker replies after new game
     difficulty: (['easy', 'medium', 'hard', 'neural'].indexOf(localStorage.getItem('baduk.difficulty')) >= 0
       ? localStorage.getItem('baduk.difficulty') : 'medium'),
-    humanColor: (localStorage.getItem('baduk.humanColor') === '2' ? WHITE : BLACK) // vs bot: your colour
+    humanColor: (localStorage.getItem('baduk.humanColor') === '2' ? WHITE : BLACK), // vs bot: your colour
+    stoneStyle: (localStorage.getItem('baduk.stoneStyle') === 'mascot' ? 'mascot' : 'normal') // 'normal' circles | 'mascot' 碁石さん faces
   };
   function t(k) { return T[S.lang][k]; }
   var botWorker = null;
@@ -159,7 +160,15 @@
       var cls = 'stone ' + (v === BLACK ? 'black' : 'white');
       if (g.lastMove && !g.lastMove.pass && g.lastMove.x === x && g.lastMove.y === y) cls += ' just-placed';
       if (S.scoring && S.dead && S.dead.has(i)) cls += ' dead';
-      layerStone.appendChild(el('circle', { cx: px(x), cy: px(y), r: R, class: cls }));
+      if (S.stoneStyle === 'mascot') {
+        layerStone.appendChild(el('image', {
+          x: px(x) - R, y: px(y) - R, width: 2 * R, height: 2 * R,
+          href: 'assets/mascot/stone-' + (v === BLACK ? 'black' : 'white') + '.png',
+          preserveAspectRatio: 'xMidYMid meet', class: cls
+        }));
+      } else {
+        layerStone.appendChild(el('circle', { cx: px(x), cy: px(y), r: R, class: cls }));
+      }
     }
 
     // last move dot
@@ -619,6 +628,9 @@
     document.querySelectorAll('[data-color]').forEach(function (b) {
       b.onclick = function () { setHumanColor(parseInt(b.getAttribute('data-color'), 10), true); };
     });
+    document.querySelectorAll('[data-stone]').forEach(function (b) {
+      b.onclick = function () { setStoneStyle(b.getAttribute('data-stone')); };
+    });
   }
 
   // ---------- mode / lang / theme ----------
@@ -654,6 +666,15 @@
     if (restart && S.mode === 'bot') newGame(); // who opens changes, so start fresh
   }
 
+  function setStoneStyle(s) {
+    S.stoneStyle = s;
+    localStorage.setItem('baduk.stoneStyle', s);
+    document.querySelectorAll('[data-stone]').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-stone') === s ? 'true' : 'false');
+    });
+    if (S.game) render();
+  }
+
   function newGame() {
     S.game = E.createGame(S.size, 6.5);
     S.snapshots = [];
@@ -679,6 +700,9 @@
     $('undoBtn').textContent = t('undo');
     $('countBtn').textContent = t('count');
     $('sizeLabel').textContent = t('size');
+    $('stoneLabel').textContent = t('stoneStyle');
+    $('stoneNormal').textContent = t('stoneNormal');
+    $('stoneMascot').textContent = t('stoneMascot');
     $('colorLabel').textContent = t('playAs');
     $('colorBlack').textContent = t('black');
     $('colorWhite').textContent = t('white');
@@ -722,6 +746,7 @@
     attach();
     setDifficulty(S.difficulty); // sync the difficulty control with the stored value
     setHumanColor(S.humanColor, false); // sync the colour control with the stored value
+    setStoneStyle(S.stoneStyle); // sync the stone-style control with the stored value
     setMode('learn'); // start in teaching mode, as requested
     setMascot('idle', t('mascotHi'));
   }
