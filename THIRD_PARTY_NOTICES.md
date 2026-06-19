@@ -45,7 +45,7 @@ https://github.com/lightvector/KataGo · https://katagotraining.org/
 - **Active (Neural tier):** `kata1-b18c384nbt-s9996604416-d4316597426` (~93MB, dan strength).
   Too large for a Pages static file (25 MiB limit), so it is stored in Cloudflare R2
   and streamed same-origin via `functions/models/[[path]].js`. Not committed to git.
-- `models/katago-small.bin.gz` (`g170-b6c96`, 3.8MB) remains as a small static fallback.
+  (No static `models/` directory is shipped, so the Function owns the `/models/*` route.)
 
 ## How neural-worker.js was built (reproducible)
 Pinned to web-katrain commit `ac761de06a5b10e5950721f37de9d7bc0f46a47a`.
