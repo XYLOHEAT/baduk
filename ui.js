@@ -7,7 +7,7 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.6.0';
+  var VERSION = '1.6.1';
   // KataGo dan net (b18c384nbt, ~93MB) served same-origin from R2 via functions/models/.
   var NEURAL_MODEL = 'models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz';
 
@@ -26,7 +26,7 @@
       hint: 'คำใบ้', gotIt: 'เข้าใจแล้ว', prev: 'ก่อนหน้า', next: 'ถัดไป',
       lesson: 'บทเรียน', goalLabel: 'เป้าหมาย', wellDone: 'ทำได้ดีมาก',
       allDone: 'จบทุกบทแล้ว! ไปลองเล่นจริงได้เลย', theme: 'สลับธีม', langName: 'EN',
-      passLabel: 'ผ่าน', stoneOnBoard: 'หมากบนกระดาน', stoneStyle: 'แบบหมาก', stoneNormal: 'ปกติ', stoneMascot: 'มาสคอต',
+      passLabel: 'ผ่าน', stoneOnBoard: 'หมากบนกระดาน', stoneStyle: 'แบบหมาก', stoneNormal: 'ปกติ', stoneMascot: 'โกอิชิซัง',
       resume: 'เล่นต่อ', scoringHint: 'แตะกลุ่มหมากที่ “ตาย” เพื่อนำออก แล้วดูแต้มด้านล่าง',
       mascotHi: 'มาเริ่มเรียนกัน!', mascotGood: 'เก่งมาก!', mascotThink: 'ขอคิดแป๊บ…',
       mascotOops: 'อุ๊ปส์ ตรงนั้นเดินไม่ได้', mascotWin: 'จบเกม มานับแต้มกัน', mascotPlay: 'ตาคุณแล้ว วางได้เลย',
@@ -49,7 +49,7 @@
       hint: 'Hint', gotIt: 'Got it', prev: 'Prev', next: 'Next',
       lesson: 'Lesson', goalLabel: 'Goal', wellDone: 'Well done',
       allDone: 'All lessons done! Go play a real game.', theme: 'Theme', langName: 'ไทย',
-      passLabel: 'pass', stoneOnBoard: 'stones on board', stoneStyle: 'Stones', stoneNormal: 'Classic', stoneMascot: 'Mascot',
+      passLabel: 'pass', stoneOnBoard: 'stones on board', stoneStyle: 'Stones', stoneNormal: 'Classic', stoneMascot: 'Goishi-san',
       resume: 'Resume', scoringHint: 'Tap “dead” groups to remove them, then read the score below',
       mascotHi: "Let's learn!", mascotGood: 'Nice move!', mascotThink: 'Thinking…',
       mascotOops: 'Oops, you can\'t play there', mascotWin: 'Game over, let\'s count', mascotPlay: 'Your turn',
