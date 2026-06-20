@@ -7,7 +7,7 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.8.1';
+  var VERSION = '1.9.0';
   // KataGo dan net (b18c384nbt, ~93MB) served same-origin from R2 via functions/models/.
   var NEURAL_MODEL = 'models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz';
 
@@ -90,6 +90,9 @@
   var svg, layerGrid, layerMark, layerStone, layerOver;
   var SVGNS = 'http://www.w3.org/2000/svg';
   var PAD = 1, R = 0.46;
+  // 碁石さん faces (1..18) with no specific board trigger — assigned as a stable
+  // per-stone "personality" so the whole expression set gets used on the board.
+  var AMBIENT_FACES = [1, 3, 4, 5, 6, 7, 10, 11, 14, 17, 18];
 
   // mascot guide: the licensed 碁石さん art will be dropped into #mascot later
   // (pending the creator's OK). For now only the speech line (#mascotMsg) is used;
@@ -152,9 +155,9 @@
       });
     }
 
-    // mascot stones: precompute each group's liberty count so a group in
-    // atari (exactly 1 liberty — about to be captured) can show a scared face
-    var libOf = null;
+    // mascot stones: precompute each group's liberty count (for the danger faces)
+    // and the star-point set (those stones get the special 碁石さん card, face 12)
+    var libOf = null, starSet = null;
     if (S.stoneStyle === 'mascot') {
       libOf = {};
       for (var gi = 0; gi < g.board.length; gi++) {
@@ -162,6 +165,8 @@
         var grp = E.group(g, gi), lc = grp.liberties.length, s;
         for (s = 0; s < grp.stones.length; s++) libOf[grp.stones[s]] = lc;
       }
+      starSet = {};
+      starPoints(n).forEach(function (p) { starSet[p[1] * n + p[0]] = 1; });
     }
 
     // stones
@@ -174,15 +179,19 @@
       if (justPlaced) cls += ' just-placed';
       if (S.scoring && S.dead && S.dead.has(i)) cls += ' dead';
       if (S.stoneStyle === 'mascot') {
-        // full emotional arc: dead > atari (scared) > just-placed (happy) > low liberties (worried) > neutral
-        var face = '';
-        if (S.scoring && S.dead && S.dead.has(i)) face = '-dead';
-        else if (libOf[i] === 1) face = '-scared';
-        else if (justPlaced) face = '-happy';
-        else if (libOf[i] === 2) face = '-worried';
+        // every 碁石さん face (1..18) is used: key board states pick a matching
+        // expression; everything else gets a stable per-stone "personality".
+        var fn;
+        if (S.scoring && S.dead && S.dead.has(i)) fn = 16;          // marked dead -> sleeping
+        else if (libOf[i] === 1) fn = 15;                          // atari -> panic
+        else if (justPlaced) fn = (g.lastMove.captured && g.lastMove.captured.length) ? 2 : 13; // captured -> smug, else laughing
+        else if (libOf[i] === 2) fn = 8;                          // 2 liberties -> worried
+        else if (libOf[i] === 3) fn = 9;                          // 3 liberties, getting hemmed in -> uneasy
+        else if (starSet[i]) fn = 12;                             // star point -> the special card
+        else fn = AMBIENT_FACES[(i * 2654435761 >>> 0) % AMBIENT_FACES.length]; // stable personality
         layerStone.appendChild(el('image', {
           x: px(x) - R, y: px(y) - R, width: 2 * R, height: 2 * R,
-          href: 'assets/mascot/stone-' + (v === BLACK ? 'black' : 'white') + face + '.png',
+          href: 'assets/mascot/stone-' + (v === BLACK ? 'black' : 'white') + '-' + fn + '.png',
           preserveAspectRatio: 'xMidYMid meet', class: cls
         }));
       } else {
