@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.11.0';
+  var VERSION = '1.12.0';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.12.0', th: 'ลื่นขึ้น: หมากไม่กระพริบตอนเลื่อนเมาส์ + ใช้แรมน้อยลง', en: 'Smoother: no stone flicker on hover + lower memory' },
     { v: '1.11.0', th: 'เพิ่มประวัติเวอร์ชันในเว็บ', en: 'In-app version history' },
     { v: '1.10.0', th: 'หน้าหมากตามสถานการณ์ + ไกด์สีชมพู', en: 'Situation-based stone faces + pink guide' },
     { v: '1.9.0', th: 'ใช้สีหน้า 碁石さん ครบ 18 แบบ', en: 'All 18 碁石さん expressions used' },
@@ -153,12 +154,17 @@
     });
   }
 
-  // ---------- render stones, markers, overlay ----------
-  function render() {
+  // ---------- render ----------
+  // Full render = stones + overlay + sidebar. Hover/cursor only redraw the overlay,
+  // so the SVG <image> stones aren't torn down on every mouse move (no flicker, no churn).
+  function render() { renderStones(); renderOverlay(); paintSidebar(); }
+
+  // stones + lesson markers — rerun only when the stones' look can change
+  // (move, pass, undo, scoring/dead, stone style, lesson/new game/size), never on hover.
+  function renderStones() {
     var g = S.game, n = g.size;
     while (layerStone.firstChild) layerStone.removeChild(layerStone.firstChild);
     while (layerMark.firstChild) layerMark.removeChild(layerMark.firstChild);
-    while (layerOver.firstChild) layerOver.removeChild(layerOver.firstChild);
 
     // lesson markers
     if (S.mode === 'learn') {
@@ -241,6 +247,12 @@
         layerStone.appendChild(el('circle', { cx: px(x), cy: px(y), r: R, class: cls }));
       }
     }
+  }
+
+  // overlay: last move, ko, hover ghost, keyboard cursor — cheap, redrawn on every hover/cursor move
+  function renderOverlay() {
+    var g = S.game, n = g.size;
+    while (layerOver.firstChild) layerOver.removeChild(layerOver.firstChild);
 
     // last move dot
     if (g.lastMove && !g.lastMove.pass) {
@@ -266,8 +278,6 @@
       x: px(S.cursor.x) - R, y: px(S.cursor.y) - R, width: 2 * R, height: 2 * R, rx: 0.08,
       class: 'cursor'
     }));
-
-    paintSidebar();
   }
 
   function currentColor() {
@@ -657,10 +667,10 @@
   function attach() {
     svg.addEventListener('pointermove', function (e) {
       var p = svgToPoint(e);
-      if (!p) { if (S.hover) { S.hover = null; render(); } return; }
-      if (!S.hover || S.hover.x !== p.x || S.hover.y !== p.y) { S.hover = p; render(); }
+      if (!p) { if (S.hover) { S.hover = null; renderOverlay(); } return; }
+      if (!S.hover || S.hover.x !== p.x || S.hover.y !== p.y) { S.hover = p; renderOverlay(); } // overlay only: stones stay put
     });
-    svg.addEventListener('pointerleave', function () { S.hover = null; render(); });
+    svg.addEventListener('pointerleave', function () { S.hover = null; renderOverlay(); });
     svg.addEventListener('pointerdown', function (e) {
       var p = svgToPoint(e); if (!p) return;
       S.cursor = { x: p.x, y: p.y };
@@ -674,7 +684,8 @@
       else if (e.key === 'ArrowDown') c.y = Math.min(n - 1, c.y + 1);
       else if (e.key === 'Enter' || e.key === ' ') { if (S.scoring) toggleDead(c.x, c.y); else tryPlay(c.x, c.y); }
       else handled = false;
-      if (handled) { e.preventDefault(); render(); }
+      // arrows just move the cursor (overlay); Enter/Space already full-rendered via tryPlay/toggleDead
+      if (handled) { e.preventDefault(); renderOverlay(); }
     });
 
     $('newGameBtn').onclick = function () { if (S.mode === 'learn') loadLesson(S.lessonIdx); else newGame(); };
@@ -765,9 +776,19 @@
     if (restart && S.mode === 'bot') newGame(); // who opens changes, so start fresh
   }
 
+  var mascotPreloaded = false;
+  function preloadMascot() {
+    if (mascotPreloaded) return;
+    mascotPreloaded = true;
+    ['white', 'black'].forEach(function (c) {
+      for (var i = 1; i <= 18; i++) { var im = new Image(); im.src = 'assets/mascot/stone-' + c + '-' + i + '.png'; }
+    });
+  }
   function setStoneStyle(s) {
     S.stoneStyle = s;
     localStorage.setItem('baduk.stoneStyle', s);
+    if (svg) svg.classList.toggle('mascot-stones', s === 'mascot'); // disables the heavy group drop-shadow for <image> stones
+    if (s === 'mascot') preloadMascot();                            // warm the HTTP/decode cache so faces don't pop in
     document.querySelectorAll('[data-stone]').forEach(function (b) {
       b.setAttribute('aria-pressed', b.getAttribute('data-stone') === s ? 'true' : 'false');
     });

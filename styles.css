@@ -90,7 +90,9 @@ svg#board:focus-visible { box-shadow: 0 0 0 3px var(--accent); border-radius: 6p
 .star { fill: var(--grid); }
 
 #layerStone { filter: drop-shadow(0 .05px .12px rgba(40, 26, 8, .5)); }
-.stone { stroke-width: .02; }
+/* mascot stones are <image>s; a group drop-shadow over many of them is memory-heavy, so drop it there */
+#board.mascot-stones #layerStone { filter: none; }
+.stone { stroke-width: .02; pointer-events: none; } /* board taps are read off the svg by coords, not per-stone */
 .stone.black { fill: url(#gradBlack); stroke: #000; }
 .stone.white { fill: url(#gradWhite); stroke: #b9b0a0; stroke-width: .03; }
 .stone.just-placed { transform-box: fill-box; transform-origin: center; animation: pop .22s cubic-bezier(.16, 1, .3, 1); }
