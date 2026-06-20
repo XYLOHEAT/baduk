@@ -159,13 +159,14 @@ footer a { color: var(--accent); text-decoration: none; }
 .score-hint { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 8px; }
 #scoreControls { margin-top: 14px; }
 
-/* mascot guide — licensed 碁石さん art by とろろ (https://tororoigo.web.fc2.com/), used with permission */
+/* mascot guide — pink 碁石さん art by とろろ (https://tororoigo.web.fc2.com/), used with permission.
+   ?v= cache-busts when the guide art changes (these filenames are reused); bump with VERSION. */
 .mascot-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .mascot { width: 62px; height: 46px; flex: none; background: center/contain no-repeat; }
-.mascot[data-state="idle"]  { background-image: url(assets/mascot/idle.png); }
-.mascot[data-state="happy"] { background-image: url(assets/mascot/happy.png); }
-.mascot[data-state="think"] { background-image: url(assets/mascot/think.png); }
-.mascot[data-state="oops"]  { background-image: url(assets/mascot/oops.png); }
+.mascot[data-state="idle"]  { background-image: url(assets/mascot/idle.png?v=1.10.0); }
+.mascot[data-state="happy"] { background-image: url(assets/mascot/happy.png?v=1.10.0); }
+.mascot[data-state="think"] { background-image: url(assets/mascot/think.png?v=1.10.0); }
+.mascot[data-state="oops"]  { background-image: url(assets/mascot/oops.png?v=1.10.0); }
 .mascot-msg { font-size: 13.5px; color: var(--ink); margin: 0; min-height: 18px; font-weight: 500; }
 
 @media (prefers-reduced-motion: reduce) {

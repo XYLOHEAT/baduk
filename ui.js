@@ -7,7 +7,7 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.9.0';
+  var VERSION = '1.10.0';
   // KataGo dan net (b18c384nbt, ~93MB) served same-origin from R2 via functions/models/.
   var NEURAL_MODEL = 'models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz';
 
@@ -90,9 +90,9 @@
   var svg, layerGrid, layerMark, layerStone, layerOver;
   var SVGNS = 'http://www.w3.org/2000/svg';
   var PAD = 1, R = 0.46;
-  // 碁石さん faces (1..18) with no specific board trigger — assigned as a stable
-  // per-stone "personality" so the whole expression set gets used on the board.
-  var AMBIENT_FACES = [1, 3, 4, 5, 6, 7, 10, 11, 14, 17, 18];
+  // genuinely-calm 碁石さん faces — the only non-situational pick, for a plain
+  // settled stone (kept stable per position so a stone's resting face doesn't flicker).
+  var CALM_FACES = [11, 3, 17, 18];
 
   // mascot guide: the licensed 碁石さん art will be dropped into #mascot later
   // (pending the creator's OK). For now only the speech line (#mascotMsg) is used;
@@ -155,18 +155,23 @@
       });
     }
 
-    // mascot stones: precompute each group's liberty count (for the danger faces)
-    // and the star-point set (those stones get the special 碁石さん card, face 12)
-    var libOf = null, starSet = null;
+    // mascot stones: precompute group liberties + sizes, the star-point set, and
+    // what the last move just captured — so each stone can pick a fitting expression.
+    var libOf = null, sizeOf = null, starSet = null, capSet = null, capColor = 0;
     if (S.stoneStyle === 'mascot') {
-      libOf = {};
+      libOf = {}; sizeOf = {};
       for (var gi = 0; gi < g.board.length; gi++) {
         if (g.board[gi] === EMPTY || libOf[gi] !== undefined) continue;
-        var grp = E.group(g, gi), lc = grp.liberties.length, s;
-        for (s = 0; s < grp.stones.length; s++) libOf[grp.stones[s]] = lc;
+        var grp = E.group(g, gi), lc = grp.liberties.length, sz = grp.stones.length, s;
+        for (s = 0; s < sz; s++) { libOf[grp.stones[s]] = lc; sizeOf[grp.stones[s]] = sz; }
       }
       starSet = {};
       starPoints(n).forEach(function (p) { starSet[p[1] * n + p[0]] = 1; });
+      capSet = {};
+      if (g.lastMove && g.lastMove.captured) {
+        g.lastMove.captured.forEach(function (ci) { capSet[ci] = 1; });
+        capColor = g.lastMove.color; // the side that made the capture
+      }
     }
 
     // stones
@@ -179,16 +184,40 @@
       if (justPlaced) cls += ' just-placed';
       if (S.scoring && S.dead && S.dead.has(i)) cls += ' dead';
       if (S.stoneStyle === 'mascot') {
-        // every 碁石さん face (1..18) is used: key board states pick a matching
-        // expression; everything else gets a stable per-stone "personality".
+        // pick a 碁石さん expression from the situation around this stone
+        var nbrs = E.neighbors(g, i), enemy = v === BLACK ? WHITE : BLACK;
+        var attacks = false, koNext = false, k;
+        for (k = 0; k < nbrs.length; k++) {
+          var nb = nbrs[k];
+          if (g.board[nb] === enemy && libOf[nb] === 1) attacks = true;  // we threaten an enemy group with capture
+          if (g.ko >= 0 && nb === g.ko) koNext = true;                   // sitting beside the ko point
+        }
+        // a friendly stone just captured diagonally next to us (an orthogonal neighbour
+        // of a captured point shares its group, so it'd be gone too) -> anger
+        var friendLost = false;
+        if (capColor === enemy) {
+          var dd = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+          for (k = 0; k < 4; k++) {
+            var dx2 = x + dd[k][0], dy2 = y + dd[k][1];
+            if (dx2 >= 0 && dy2 >= 0 && dx2 < n && dy2 < n && capSet[dy2 * n + dx2]) { friendLost = true; break; }
+          }
+        }
+        var capN = (justPlaced && g.lastMove.captured) ? g.lastMove.captured.length : 0;
+        var hash = (i * 2654435761 >>> 0);
         var fn;
-        if (S.scoring && S.dead && S.dead.has(i)) fn = 16;          // marked dead -> sleeping
-        else if (libOf[i] === 1) fn = 15;                          // atari -> panic
-        else if (justPlaced) fn = (g.lastMove.captured && g.lastMove.captured.length) ? 2 : 13; // captured -> smug, else laughing
-        else if (libOf[i] === 2) fn = 8;                          // 2 liberties -> worried
-        else if (libOf[i] === 3) fn = 9;                          // 3 liberties, getting hemmed in -> uneasy
-        else if (starSet[i]) fn = 12;                             // star point -> the special card
-        else fn = AMBIENT_FACES[(i * 2654435761 >>> 0) % AMBIENT_FACES.length]; // stable personality
+        if (S.scoring && S.dead && S.dead.has(i)) fn = 16;       // marked dead -> sleeping
+        else if (libOf[i] === 1) fn = sizeOf[i] >= 4 ? 4 : 15;  // atari: big group doomed -> pale shock, else panic
+        else if (capN >= 3) fn = 14;                            // just captured a big group -> big laugh
+        else if (capN >= 1) fn = 2;                             // just captured -> smug
+        else if (friendLost) fn = (hash & 1) ? 1 : 5;          // a friend was just captured beside us -> angry
+        else if (libOf[i] === 2) fn = 8;                        // 2 liberties -> worried
+        else if (justPlaced) fn = attacks ? 10 : 13;           // just placed: sneaky if it threatens, else happy
+        else if (attacks) fn = 10;                             // threatening an enemy group -> mischievous
+        else if (koNext) fn = 6;                               // beside the ko point -> pouty
+        else if (libOf[i] === 3) fn = 9;                       // getting hemmed in -> uneasy
+        else if (libOf[i] >= 6 || sizeOf[i] >= 5) fn = 7;      // strong / large group -> content
+        else if (starSet[i]) fn = 12;                          // star point -> the special card
+        else fn = CALM_FACES[hash % CALM_FACES.length];        // plain settled stone -> calm
         layerStone.appendChild(el('image', {
           x: px(x) - R, y: px(y) - R, width: 2 * R, height: 2 * R,
           href: 'assets/mascot/stone-' + (v === BLACK ? 'black' : 'white') + '-' + fn + '.png',
