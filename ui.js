@@ -7,7 +7,7 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.8.0';
+  var VERSION = '1.8.1';
   // KataGo dan net (b18c384nbt, ~93MB) served same-origin from R2 via functions/models/.
   var NEURAL_MODEL = 'models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz';
 
@@ -410,6 +410,16 @@
   }
 
   function neuralTurn(bc, token) {
+    var budget = S.size <= 9 ? 4000 : S.size <= 13 ? 6000 : 10000;
+    // Watchdog: a worker that stalls (WASM thread deadlock, or a model load/network
+    // hang) must never freeze the board. After a generous grace period, fall back to
+    // the greedy bot. The first call's grace also covers the ~90MB model download.
+    setTimeout(function () {
+      if (token !== S.botToken || !S.busy) return; // a real reply already landed
+      S.botToken++;                                // invalidate any late neural reply so it can't double-move
+      setStatus(t('neuralFail'));
+      applyBotMove(botMove(S.game, bc));
+    }, (neural && neural.initialized) ? budget + 8000 : 90000);
     ensureNeural().then(function () {
       if (token !== S.botToken) return;          // stale (new game / mode / difficulty change)
       setStatus(t('botThinks'));
@@ -417,7 +427,7 @@
         type: 'katago:analyze', id: token, modelUrl: NEURAL_MODEL,
         board: toIntersections(S.game), currentPlayer: bc === BLACK ? 'black' : 'white',
         komi: S.game.komi, rules: 'chinese',
-        visits: 256, maxTimeMs: S.size <= 9 ? 4000 : S.size <= 13 ? 6000 : 10000, moveHistory: []
+        visits: 256, maxTimeMs: budget, moveHistory: []
       });
     }).catch(function () {
       if (token !== S.botToken) return;
