@@ -153,6 +153,18 @@ select { font: inherit; padding: 7px 10px; border-radius: 8px; border: 1px solid
 .status { min-height: 20px; margin-top: 10px; font-size: 14px; color: var(--ink); }
 footer { margin-top: 26px; color: var(--ink-soft); font-size: 12.5px; text-align: center; }
 footer a { color: var(--accent); text-decoration: none; }
+.ver-btn { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline dotted; }
+.ver-btn:hover { text-decoration: underline; }
+
+/* version history dialog */
+.changelog { width: min(440px, 92vw); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; background: var(--panel); color: var(--ink); box-shadow: 0 12px 40px var(--shadow); }
+.changelog::backdrop { background: rgba(0, 0, 0, .45); }
+.changelog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.changelog-head h3 { margin: 0; font-size: 16px; }
+.changelog ul { list-style: none; margin: 0; padding: 0; text-align: left; max-height: 60vh; overflow: auto; }
+.changelog li { display: flex; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+.changelog li:first-child { border-top: 0; }
+.changelog li b { color: var(--accent); flex: none; min-width: 56px; font-variant-numeric: tabular-nums; }
 
 /* dead-stone marking (scoring mode) */
 .stone.dead { opacity: .26; }

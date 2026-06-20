@@ -7,7 +7,21 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.10.0';
+  var VERSION = '1.11.0';
+  // shown in the in-app "version history" dialog (newest first)
+  var CHANGELOG = [
+    { v: '1.11.0', th: 'เพิ่มประวัติเวอร์ชันในเว็บ', en: 'In-app version history' },
+    { v: '1.10.0', th: 'หน้าหมากตามสถานการณ์ + ไกด์สีชมพู', en: 'Situation-based stone faces + pink guide' },
+    { v: '1.9.0', th: 'ใช้สีหน้า 碁石さん ครบ 18 แบบ', en: 'All 18 碁石さん expressions used' },
+    { v: '1.8.0', th: 'หมากมีอารมณ์ครบ (กังวล/ตกใจ/ตาย)', en: 'Full stone emotions (worried/scared/dead)' },
+    { v: '1.7.0', th: 'หมากเปลี่ยนสีหน้าเมื่อจะโดนกิน', en: 'Stones react when in atari' },
+    { v: '1.6.0', th: 'ปุ่มสลับหมาก ปกติ / โกอิชิซัง', en: 'Classic / Goishi-san stone toggle' },
+    { v: '1.5.0', th: 'เพิ่มมาสคอตนำทาง 碁石さん', en: 'Added 碁石さん teaching mascot' },
+    { v: '1.4.0', th: 'บอทนิวรัล KataGo ระดับดั้น', en: 'Dan-level KataGo neural bot' },
+    { v: '1.2.0', th: 'จบเกมด้วยพาส 2 ครั้ง + นับแต้ม', en: 'Two passes end the game + scoring' },
+    { v: '1.1.0', th: 'เล่นกับบอท + เลือกสี + ปรับความยาก', en: 'Vs bot + colour choice + difficulty' },
+    { v: '1.0.0', th: 'เกมโกะ + โหมดสอนเล่น', en: 'Go game + teaching mode' }
+  ];
   // KataGo dan net (b18c384nbt, ~93MB) served same-origin from R2 via functions/models/.
   var NEURAL_MODEL = 'models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz';
 
@@ -26,7 +40,7 @@
       hint: 'คำใบ้', gotIt: 'เข้าใจแล้ว', prev: 'ก่อนหน้า', next: 'ถัดไป',
       lesson: 'บทเรียน', goalLabel: 'เป้าหมาย', wellDone: 'ทำได้ดีมาก',
       allDone: 'จบทุกบทแล้ว! ไปลองเล่นจริงได้เลย', theme: 'สลับธีม', langName: 'EN',
-      passLabel: 'ผ่าน', stoneOnBoard: 'หมากบนกระดาน', stoneStyle: 'แบบหมาก', stoneNormal: 'ปกติ', stoneMascot: 'โกอิชิซัง',
+      passLabel: 'ผ่าน', stoneOnBoard: 'หมากบนกระดาน', stoneStyle: 'แบบหมาก', stoneNormal: 'ปกติ', stoneMascot: 'โกอิชิซัง', verHistory: 'ประวัติเวอร์ชัน', closeLbl: 'ปิด',
       resume: 'เล่นต่อ', scoringHint: 'แตะกลุ่มหมากที่ “ตาย” เพื่อนำออก แล้วดูแต้มด้านล่าง',
       mascotHi: 'มาเริ่มเรียนกัน!', mascotGood: 'เก่งมาก!', mascotThink: 'ขอคิดแป๊บ…',
       mascotOops: 'อุ๊ปส์ ตรงนั้นเดินไม่ได้', mascotWin: 'จบเกม มานับแต้มกัน', mascotPlay: 'ตาคุณแล้ว วางได้เลย',
@@ -49,7 +63,7 @@
       hint: 'Hint', gotIt: 'Got it', prev: 'Prev', next: 'Next',
       lesson: 'Lesson', goalLabel: 'Goal', wellDone: 'Well done',
       allDone: 'All lessons done! Go play a real game.', theme: 'Theme', langName: 'ไทย',
-      passLabel: 'pass', stoneOnBoard: 'stones on board', stoneStyle: 'Stones', stoneNormal: 'Classic', stoneMascot: 'Goishi-san',
+      passLabel: 'pass', stoneOnBoard: 'stones on board', stoneStyle: 'Stones', stoneNormal: 'Classic', stoneMascot: 'Goishi-san', verHistory: 'Version history', closeLbl: 'Close',
       resume: 'Resume', scoringHint: 'Tap “dead” groups to remove them, then read the score below',
       mascotHi: "Let's learn!", mascotGood: 'Nice move!', mascotThink: 'Thinking…',
       mascotOops: 'Oops, you can\'t play there', mascotWin: 'Game over, let\'s count', mascotPlay: 'Your turn',
@@ -698,6 +712,24 @@
     document.querySelectorAll('[data-stone]').forEach(function (b) {
       b.onclick = function () { setStoneStyle(b.getAttribute('data-stone')); };
     });
+    $('versionBtn').onclick = openChangelog;
+    $('changelogClose').onclick = function () { $('changelog').close(); };
+    $('changelog').onclick = function (e) { if (e.target === $('changelog')) $('changelog').close(); }; // click backdrop to close
+  }
+
+  // ---------- version history ----------
+  function openChangelog() {
+    var ul = $('changelogBody');
+    while (ul.firstChild) ul.removeChild(ul.firstChild);
+    CHANGELOG.forEach(function (c) {
+      var li = document.createElement('li');
+      var b = document.createElement('b'); b.textContent = 'v' + c.v;       // textContent: no HTML injection
+      var span = document.createElement('span'); span.textContent = c[S.lang] || c.en;
+      li.appendChild(b); li.appendChild(span); ul.appendChild(li);
+    });
+    $('changelogTitle').textContent = t('verHistory');
+    $('changelogClose').textContent = t('closeLbl');
+    $('changelog').showModal();
   }
 
   // ---------- mode / lang / theme ----------
@@ -785,6 +817,7 @@
     $('nextLesson').textContent = t('next') + ' ›';
     $('langBtn').textContent = t('langName');
     $('themeBtn').setAttribute('aria-label', t('theme'));
+    if ($('changelog').open) openChangelog(); // refresh the version list in the new language
   }
 
   function toggleTheme() {
