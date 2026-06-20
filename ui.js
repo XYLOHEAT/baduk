@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.13.0';
+  var VERSION = '1.14.0';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.14.0', th: 'ความยากจริงบน 19×19: ยากใช้เน็ตเล็กทุกกระดาน, กลางใช้เน็ตบน 19×19', en: 'Real 19×19 difficulty: Hard uses a compact net everywhere, Medium on 19×19' },
     { v: '1.13.0', th: 'ลดแรม: คืนหน่วยความจำบอทนิวรัลเมื่อเลิกใช้/พักจอ', en: 'Lower memory: free the neural bot when unused / tab hidden' },
     { v: '1.12.0', th: 'ลื่นขึ้น: หมากไม่กระพริบตอนเลื่อนเมาส์ + ใช้แรมน้อยลง', en: 'Smoother: no stone flicker on hover + lower memory' },
     { v: '1.11.0', th: 'เพิ่มประวัติเวอร์ชันในเว็บ', en: 'In-app version history' },
@@ -25,7 +26,8 @@
     { v: '1.0.0', th: 'เกมโกะ + โหมดสอนเล่น', en: 'Go game + teaching mode' }
   ];
   // KataGo dan net (b18c384nbt, ~93MB) served same-origin from R2 via functions/models/.
-  var NEURAL_MODEL = 'models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz';
+  var NEURAL_MODEL = 'models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz'; // b18 dan (~93MB, R2)
+  var SMALL_MODEL = 'assets/models/kata-small-b6c96.bin.gz';                    // g170 b6c96 (~4MB, static)
 
   // ---------- i18n (static strings only; never user input) ----------
   var T = {
@@ -47,7 +49,7 @@
       mascotHi: 'มาเริ่มเรียนกัน!', mascotGood: 'เก่งมาก!', mascotThink: 'ขอคิดแป๊บ…',
       mascotOops: 'อุ๊ปส์ ตรงนั้นเดินไม่ได้', mascotWin: 'จบเกม มานับแต้มกัน', mascotPlay: 'ตาคุณแล้ว วางได้เลย',
       difficulty: 'ระดับความยาก', diffEasy: 'ง่าย', diffMedium: 'กลาง', diffHard: 'ยาก', diffNeural: 'นิวรัล',
-      diffNote19: '19×19: โหมดเร็วใช้ greedy · นิวรัลเล่นได้แต่ช้ากว่า',
+      diffNote19: '19×19: กลาง/ยากใช้เน็ตเล็ก (โหลด ~4MB ครั้งแรก) · นิวรัล = แข็งสุด',
       neuralLoading: 'กำลังโหลดเอนจินนิวรัล KataGo ระดับดั้น (~90MB) … ครั้งแรกช้า แล้วจะ cache ไว้',
       neuralFail: 'โหลดนิวรัลไม่สำเร็จ ใช้บอทปกติแทน',
       playAs: 'คุณเล่นเป็น', botPlays: 'บอทเล่น', blackFirst: 'ดำเดินก่อน', takeTurns: 'เดินสลับกัน'
@@ -70,7 +72,7 @@
       mascotHi: "Let's learn!", mascotGood: 'Nice move!', mascotThink: 'Thinking…',
       mascotOops: 'Oops, you can\'t play there', mascotWin: 'Game over, let\'s count', mascotPlay: 'Your turn',
       difficulty: 'Difficulty', diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffNeural: 'Neural',
-      diffNote19: '19×19: fast tiers use greedy · neural works but is slower',
+      diffNote19: '19×19: Medium/Hard use a compact net (~4 MB first load) · Neural = strongest',
       neuralLoading: 'Loading dan-level KataGo engine (~90MB)… slow first time, then cached',
       neuralFail: 'Neural failed to load; using the regular bot',
       playAs: 'You play', botPlays: 'Bot plays', blackFirst: 'Black moves first', takeTurns: 'take turns'
@@ -421,8 +423,9 @@
       var oppPts = bc === BLACK ? sc.white : sc.black;
       if (botPts >= oppPts) { setTimeout(function () { if (token === S.botToken) applyBotMove(null); }, 250); return; }
     }
-    if (S.difficulty === 'neural') { neuralTurn(bc, token); return; }
-    var useMC = (S.difficulty !== 'easy') && S.size <= 13;
+    var kModel = kataModel(S.difficulty, S.size); // b18 / compact / null
+    if (kModel) { kataTurn(bc, token, kModel); return; }
+    var useMC = (S.difficulty !== 'easy') && S.size <= 13; // only Medium on <=13 reaches here
     if (useMC) {
       var g = S.game;
       getWorker().postMessage({
@@ -446,13 +449,28 @@
     return botWorker;
   }
 
-  // ---------- neural bot (KataGo via vendored worker; lazy-loaded, disposable) ----------
-  // The neural worker holds a ~93MB model + TensorFlow.js (hundreds of MB live), so we own
-  // its lifecycle: create it lazily, and terminate it (disposeNeural) whenever it isn't
-  // actively needed — tier switch, leaving bot mode, idle, or the page being hidden/closed.
-  var neural = null;        // { worker, ready, rejectReady, initialized, disposed, activeToken }
+  // ---------- KataGo bot (vendored worker; lazy, disposable) ----------
+  // The worker loads ONE model at a time: the ~93MB b18 dan net for Neural, or the ~4MB
+  // compact net for Hard (any size) and Medium-on-19x19. b18 is hundreds of MB live, so we
+  // own the lifecycle: create lazily, terminate when not needed (tier/size switch, leaving
+  // bot mode, idle, page hidden/closed).
+  var neural = null;        // { worker, ready, rejectReady, initialized, disposed, activeToken, modelUrl }
   var neuralWatchdog = 0;   // timer id for the in-flight analyze
   var neuralIdleTimer = 0;  // terminate-when-idle timer
+
+  // which KataGo net (if any) a tier uses at a board size; null => local engine (greedy / flat MC)
+  function kataModel(d, n) {
+    if (d === 'neural') return NEURAL_MODEL;            // b18 dan, any size
+    if (d === 'hard') return SMALL_MODEL;              // compact net, any size
+    if (d === 'medium' && n >= 19) return SMALL_MODEL;  // compact net on big boards only
+    return null;
+  }
+  function kataBudget(d, n) {
+    if (d === 'neural') return { visits: 256, maxTimeMs: n <= 9 ? 4000 : n <= 13 ? 6000 : 10000 };
+    if (d === 'hard') return { visits: n <= 13 ? 128 : 96, maxTimeMs: n <= 9 ? 1500 : n <= 13 ? 2000 : 2500 };
+    return { visits: 32, maxTimeMs: 1200 };            // medium on 19x19
+  }
+  function kataReady(modelUrl) { return !!(neural && neural.initialized && neural.modelUrl === modelUrl); }
 
   function clearNeuralTimers() {
     if (neuralWatchdog) { clearTimeout(neuralWatchdog); neuralWatchdog = 0; }
@@ -464,24 +482,28 @@
     if (!n || n.disposed) return;
     n.disposed = true;
     n.worker.onmessage = null; n.worker.onerror = null;
-    if (n.rejectReady && !n.initialized) n.rejectReady(new Error('disposed')); // unblock a pending ensureNeural().then
+    if (n.rejectReady && !n.initialized) n.rejectReady(new Error('disposed')); // unblock a pending ensureKata().then
     try { n.worker.terminate(); } catch (e) {} // frees the model + TF.js heap
   }
-  function isLiveNeuralTurn(token) { // is this token still the bot's current neural move?
+  function disposeKataIfStale() { // drop the worker if the loaded model isn't what the tier/size needs
+    if (neural && neural.modelUrl !== kataModel(S.difficulty, S.size)) disposeNeural();
+  }
+  function isLiveKataTurn(token) { // is this token still the bot's current KataGo move?
     return token === S.botToken && S.busy && S.mode === 'bot'
-      && S.difficulty === 'neural' && S.game && S.game.toMove === botColor();
+      && !!kataModel(S.difficulty, S.size) && S.game && S.game.toMove === botColor();
   }
   function scheduleNeuralIdleDispose() {
     if (neuralIdleTimer) clearTimeout(neuralIdleTimer);
     // free the model after a quiet spell: a short pause shouldn't pay the reload cost,
-    // but a finished session shouldn't keep hundreds of MB resident.
+    // but a finished session shouldn't keep the model resident.
     neuralIdleTimer = setTimeout(function () { if (!S.busy) disposeNeural(); }, document.hidden ? 30000 : 300000);
   }
 
-  function ensureNeural() {
-    if (neural) return neural.ready;
+  function ensureKata(modelUrl) {
+    if (neural && neural.modelUrl === modelUrl) return neural.ready;
+    if (neural) disposeNeural();                         // switching model family -> recreate
     var worker = new Worker('neural-worker.js?v=' + VERSION, { type: 'module' });
-    var obj = { worker: worker, initialized: false, disposed: false, activeToken: 0 };
+    var obj = { worker: worker, initialized: false, disposed: false, activeToken: 0, modelUrl: modelUrl };
     obj.ready = new Promise(function (resolve, reject) {
       obj.rejectReady = reject;
       worker.onmessage = function (ev) {
@@ -495,42 +517,59 @@
         else if (obj === neural && S.busy) { setStatus(t('neuralFail')); applyBotMove(botMove(S.game, botColor())); } // recover a stuck analysis
       };
     });
-    setStatus(t('neuralLoading'));
-    setMascot('think', t('neuralLoading'));
-    worker.postMessage({ type: 'katago:init', modelUrl: NEURAL_MODEL });
+    worker.postMessage({ type: 'katago:init', modelUrl: modelUrl });
     neural = obj;
     return obj.ready;
   }
+  function prewarmKata() { // start loading the tier's model silently, in the background
+    if (S.mode !== 'bot') return;
+    var m = kataModel(S.difficulty, S.size);
+    if (m) ensureKata(m).catch(function () {}); // a failed prewarm is handled when the bot actually moves
+  }
+  // simple opening: first empty star point (4-4 corner-ish), used only as a cold-start first move
+  function bookMove(g) {
+    var pts = starPoints(g.size);
+    for (var i = 0; i < pts.length; i++) { if (g.board[pts[i][1] * g.size + pts[i][0]] === EMPTY) return { x: pts[i][0], y: pts[i][1] }; }
+    return null;
+  }
 
-  function neuralTurn(bc, token) {
-    var budget = S.size <= 9 ? 4000 : S.size <= 13 ? 6000 : 10000;
+  function kataTurn(bc, token, modelUrl) {
+    var b = kataBudget(S.difficulty, S.size);
+    var cold = !kataReady(modelUrl);
+    // cold + bot opening on a near-empty board: play an instant corner move and warm the
+    // model in the background, so the very first move isn't a long download wait.
+    if (cold && S.game.moveNumber <= 1) {
+      ensureKata(modelUrl).catch(function () {}); // warm in background; the next move waits/falls back
+      var bm = bookMove(S.game);
+      if (bm) { applyBotMove(bm); return; }
+    }
+    if (cold) { setStatus(t('neuralLoading')); setMascot('think', t('neuralLoading')); }
     if (neuralWatchdog) clearTimeout(neuralWatchdog);
     // Watchdog: a stalled worker (WASM deadlock, or a model load/network hang) must never
-    // freeze the board. After a grace period, terminate it and fall back to the greedy bot.
-    // The first call's grace also covers the ~90MB model download.
+    // freeze the board. After a grace period, terminate it and fall back to the local bot.
     neuralWatchdog = setTimeout(function () {
       neuralWatchdog = 0;
-      if (!isLiveNeuralTurn(token)) return;
+      if (!isLiveKataTurn(token)) return;
       S.botToken++;            // invalidate any late reply so it can't double-move
-      disposeNeural();         // the worker is suspect — free it (model + TF.js)
+      disposeNeural();         // the worker is suspect — free it
       setStatus(t('neuralFail'));
       applyBotMove(botMove(S.game, bc));
-    }, (neural && neural.initialized) ? budget + 8000 : 90000);
-    ensureNeural().then(function () {
+    }, cold ? 90000 : b.maxTimeMs + 8000);
+    ensureKata(modelUrl).then(function () {
       var n = neural;
-      if (!n || n.disposed || !isLiveNeuralTurn(token)) return; // stale / disposed generation
+      if (!n || n.disposed || !isLiveKataTurn(token)) return; // stale / disposed generation
       n.activeToken = token;
       setStatus(t('botThinks'));
       n.worker.postMessage({
-        type: 'katago:analyze', id: token, modelUrl: NEURAL_MODEL,
+        type: 'katago:analyze', id: token, modelUrl: modelUrl,
         board: toIntersections(S.game), currentPlayer: bc === BLACK ? 'black' : 'white',
         komi: S.game.komi, rules: 'chinese',
-        visits: 256, maxTimeMs: budget, moveHistory: []
+        visits: b.visits, maxTimeMs: b.maxTimeMs, moveHistory: []
       });
     }).catch(function () {
-      if (!isLiveNeuralTurn(token)) return;
+      if (!isLiveKataTurn(token)) return;
       clearNeuralTimers();
-      setStatus(t('neuralFail'));               // graceful fallback to the greedy bot
+      setStatus(t('neuralFail'));               // graceful fallback to the local bot
       applyBotMove(botMove(S.game, bc));
     });
   }
@@ -539,14 +578,14 @@
     if (m.id !== S.botToken) return;             // stale result
     if (neuralWatchdog) { clearTimeout(neuralWatchdog); neuralWatchdog = 0; } // a real reply landed
     if (neural) neural.activeToken = 0;
-    if (!m.ok) { applyBotMove(botMove(S.game, botColor())); scheduleNeuralIdleDispose(); return; } // analysis failed -> greedy fallback
+    if (!m.ok) { applyBotMove(botMove(S.game, botColor())); scheduleNeuralIdleDispose(); return; } // analysis failed -> local fallback
     var mv = null;
     if (m.analysis && m.analysis.moves && m.analysis.moves.length) {
       var b = m.analysis.moves[0];
       if (b.x >= 0 && b.y >= 0 && b.x < S.size && b.y < S.size) mv = { x: b.x, y: b.y }; // else off-board -> genuine pass
     }
     applyBotMove(mv);
-    scheduleNeuralIdleDispose();                  // free the model if no more neural moves come soon
+    scheduleNeuralIdleDispose();                  // free the model if no more moves come soon
   }
 
   function toIntersections(g) { // engine board -> KataGo BoardState (board[y][x] = 'black'|'white'|null)
@@ -812,19 +851,19 @@
   }
 
   function setDifficulty(d) {
-    var was = S.difficulty;
     S.difficulty = d;
     S.botToken++; // invalidate any in-flight bot move so a tier switch mid-think can't land a stale move
     clearNeuralTimers();
-    if (was === 'neural' && d !== 'neural') disposeNeural(); // leaving the neural tier -> free the model
+    disposeKataIfStale();   // drop the worker if the new tier needs a different model (or none)
     localStorage.setItem('baduk.difficulty', d);
     document.querySelectorAll('[data-diff]').forEach(function (b) {
       b.setAttribute('aria-pressed', b.getAttribute('data-diff') === d ? 'true' : 'false');
     });
-    $('diffNote').hidden = !(S.size >= 19); // difficulty has no effect on 19x19
+    $('diffNote').hidden = !(S.size >= 19);
     // if the switch happened mid-think the board would be stuck busy with the bot to move;
     // cancel and recompute under the new tier so it never deadlocks.
     if (S.busy && S.mode === 'bot' && S.game && S.game.toMove === botColor()) { S.busy = false; botTurn(); }
+    else prewarmKata(); // otherwise warm the new tier's model in the background
   }
 
   function setHumanColor(c, restart) {
@@ -861,6 +900,7 @@
     S.cursor = { x: Math.floor(S.size / 2), y: Math.floor(S.size / 2) };
     S.scoring = false; S.scoringOver = false; S.dead = null; S.busy = false; S.botToken++; // invalidate in-flight bot reply
     clearNeuralTimers();
+    disposeKataIfStale(); // a size change can change which model (if any) the tier needs
     $('scoreBox').hidden = true; $('scoreControls').hidden = true;
     $('diffNote').hidden = !(S.size >= 19);
     setMascot('idle', S.mode === 'bot' ? t('mascotPlay') : t('mascotHi'));
@@ -869,7 +909,8 @@
     setStatus('');
     // if the human chose White, the bot (Black) opens — Black always moves first
     if (S.mode === 'bot' && S.game.toMove === botColor()) botTurn();
-    else if (neural) scheduleNeuralIdleDispose(); // bot won't move now -> let an unused model time out
+    else if (S.mode === 'bot') prewarmKata(); // human opens -> warm the bot's model for its reply
+    else if (neural) scheduleNeuralIdleDispose();
   }
 
   function applyLang() {

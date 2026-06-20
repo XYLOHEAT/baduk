@@ -21,3 +21,7 @@
 # so a transient 404 there is never cached as immutable.)
 /tfjs/*
   Cache-Control: public, max-age=31536000, immutable
+
+# compact KataGo net (static, <25 MiB) for Medium/Hard — immutable, content-addressed by name
+/assets/models/*
+  Cache-Control: public, max-age=31536000, immutable
