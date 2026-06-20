@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.12.0';
+  var VERSION = '1.13.0';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.13.0', th: 'ลดแรม: คืนหน่วยความจำบอทนิวรัลเมื่อเลิกใช้/พักจอ', en: 'Lower memory: free the neural bot when unused / tab hidden' },
     { v: '1.12.0', th: 'ลื่นขึ้น: หมากไม่กระพริบตอนเลื่อนเมาส์ + ใช้แรมน้อยลง', en: 'Smoother: no stone flicker on hover + lower memory' },
     { v: '1.11.0', th: 'เพิ่มประวัติเวอร์ชันในเว็บ', en: 'In-app version history' },
     { v: '1.10.0', th: 'หน้าหมากตามสถานการณ์ + ไกด์สีชมพู', en: 'Situation-based stone faces + pink guide' },
@@ -119,7 +120,7 @@
       size: g.size, board: g.board.slice(), toMove: g.toMove, komi: g.komi,
       captures: { 1: g.captures[1], 2: g.captures[2] }, ko: g.ko,
       lastMove: g.lastMove, passes: g.passes, moveNumber: g.moveNumber,
-      history: g.history.slice()
+      history: [] // g.history is write-only (never read); don't copy it into every undo snapshot
     };
   }
   function px(v) { return PAD + v; }
@@ -445,14 +446,44 @@
     return botWorker;
   }
 
-  // ---------- neural bot (KataGo via vendored worker; lazy-loaded) ----------
-  var neural = null; // { worker, ready: Promise }
+  // ---------- neural bot (KataGo via vendored worker; lazy-loaded, disposable) ----------
+  // The neural worker holds a ~93MB model + TensorFlow.js (hundreds of MB live), so we own
+  // its lifecycle: create it lazily, and terminate it (disposeNeural) whenever it isn't
+  // actively needed — tier switch, leaving bot mode, idle, or the page being hidden/closed.
+  var neural = null;        // { worker, ready, rejectReady, initialized, disposed, activeToken }
+  var neuralWatchdog = 0;   // timer id for the in-flight analyze
+  var neuralIdleTimer = 0;  // terminate-when-idle timer
+
+  function clearNeuralTimers() {
+    if (neuralWatchdog) { clearTimeout(neuralWatchdog); neuralWatchdog = 0; }
+    if (neuralIdleTimer) { clearTimeout(neuralIdleTimer); neuralIdleTimer = 0; }
+  }
+  function disposeNeural() {
+    clearNeuralTimers();
+    var n = neural; neural = null;
+    if (!n || n.disposed) return;
+    n.disposed = true;
+    n.worker.onmessage = null; n.worker.onerror = null;
+    if (n.rejectReady && !n.initialized) n.rejectReady(new Error('disposed')); // unblock a pending ensureNeural().then
+    try { n.worker.terminate(); } catch (e) {} // frees the model + TF.js heap
+  }
+  function isLiveNeuralTurn(token) { // is this token still the bot's current neural move?
+    return token === S.botToken && S.busy && S.mode === 'bot'
+      && S.difficulty === 'neural' && S.game && S.game.toMove === botColor();
+  }
+  function scheduleNeuralIdleDispose() {
+    if (neuralIdleTimer) clearTimeout(neuralIdleTimer);
+    // free the model after a quiet spell: a short pause shouldn't pay the reload cost,
+    // but a finished session shouldn't keep hundreds of MB resident.
+    neuralIdleTimer = setTimeout(function () { if (!S.busy) disposeNeural(); }, document.hidden ? 30000 : 300000);
+  }
+
   function ensureNeural() {
     if (neural) return neural.ready;
     var worker = new Worker('neural-worker.js?v=' + VERSION, { type: 'module' });
-    var obj = { worker: worker };
-    obj.initialized = false;
+    var obj = { worker: worker, initialized: false, disposed: false, activeToken: 0 };
     obj.ready = new Promise(function (resolve, reject) {
+      obj.rejectReady = reject;
       worker.onmessage = function (ev) {
         var m = ev.data;
         if (m.type === 'katago:init_result') { if (m.ok) { obj.initialized = true; resolve(); } else reject(new Error(m.error || 'init failed')); return; }
@@ -461,7 +492,7 @@
       };
       worker.onerror = function () {
         if (!obj.initialized) { reject(new Error('neural worker error')); }
-        else if (S.busy) { setStatus(t('neuralFail')); applyBotMove(botMove(S.game, botColor())); } // recover a stuck analysis
+        else if (obj === neural && S.busy) { setStatus(t('neuralFail')); applyBotMove(botMove(S.game, botColor())); } // recover a stuck analysis
       };
     });
     setStatus(t('neuralLoading'));
@@ -473,40 +504,49 @@
 
   function neuralTurn(bc, token) {
     var budget = S.size <= 9 ? 4000 : S.size <= 13 ? 6000 : 10000;
-    // Watchdog: a worker that stalls (WASM thread deadlock, or a model load/network
-    // hang) must never freeze the board. After a generous grace period, fall back to
-    // the greedy bot. The first call's grace also covers the ~90MB model download.
-    setTimeout(function () {
-      if (token !== S.botToken || !S.busy) return; // a real reply already landed
-      S.botToken++;                                // invalidate any late neural reply so it can't double-move
+    if (neuralWatchdog) clearTimeout(neuralWatchdog);
+    // Watchdog: a stalled worker (WASM deadlock, or a model load/network hang) must never
+    // freeze the board. After a grace period, terminate it and fall back to the greedy bot.
+    // The first call's grace also covers the ~90MB model download.
+    neuralWatchdog = setTimeout(function () {
+      neuralWatchdog = 0;
+      if (!isLiveNeuralTurn(token)) return;
+      S.botToken++;            // invalidate any late reply so it can't double-move
+      disposeNeural();         // the worker is suspect — free it (model + TF.js)
       setStatus(t('neuralFail'));
       applyBotMove(botMove(S.game, bc));
     }, (neural && neural.initialized) ? budget + 8000 : 90000);
     ensureNeural().then(function () {
-      if (token !== S.botToken) return;          // stale (new game / mode / difficulty change)
+      var n = neural;
+      if (!n || n.disposed || !isLiveNeuralTurn(token)) return; // stale / disposed generation
+      n.activeToken = token;
       setStatus(t('botThinks'));
-      neural.worker.postMessage({
+      n.worker.postMessage({
         type: 'katago:analyze', id: token, modelUrl: NEURAL_MODEL,
         board: toIntersections(S.game), currentPlayer: bc === BLACK ? 'black' : 'white',
         komi: S.game.komi, rules: 'chinese',
         visits: 256, maxTimeMs: budget, moveHistory: []
       });
     }).catch(function () {
-      if (token !== S.botToken) return;
-      setStatus(t('neuralFail'));                // graceful fallback to the greedy bot
+      if (!isLiveNeuralTurn(token)) return;
+      clearNeuralTimers();
+      setStatus(t('neuralFail'));               // graceful fallback to the greedy bot
       applyBotMove(botMove(S.game, bc));
     });
   }
 
   function onNeuralResult(m) {
     if (m.id !== S.botToken) return;             // stale result
-    if (!m.ok) { applyBotMove(botMove(S.game, botColor())); return; } // analysis failed -> greedy fallback, not a pass
+    if (neuralWatchdog) { clearTimeout(neuralWatchdog); neuralWatchdog = 0; } // a real reply landed
+    if (neural) neural.activeToken = 0;
+    if (!m.ok) { applyBotMove(botMove(S.game, botColor())); scheduleNeuralIdleDispose(); return; } // analysis failed -> greedy fallback
     var mv = null;
     if (m.analysis && m.analysis.moves && m.analysis.moves.length) {
       var b = m.analysis.moves[0];
       if (b.x >= 0 && b.y >= 0 && b.x < S.size && b.y < S.size) mv = { x: b.x, y: b.y }; // else off-board -> genuine pass
     }
     applyBotMove(mv);
+    scheduleNeuralIdleDispose();                  // free the model if no more neural moves come soon
   }
 
   function toIntersections(g) { // engine board -> KataGo BoardState (board[y][x] = 'black'|'white'|null)
@@ -726,6 +766,18 @@
     $('versionBtn').onclick = openChangelog;
     $('changelogClose').onclick = function () { $('changelog').close(); };
     $('changelog').onclick = function (e) { if (e.target === $('changelog')) $('changelog').close(); }; // click backdrop to close
+
+    // free the neural model's memory when the tab is hidden or the page is leaving
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden && neural && !S.busy) scheduleNeuralIdleDispose(); // hidden tab -> dispose after 30s
+    });
+    window.addEventListener('pagehide', function () {
+      if (S.busy && S.mode === 'bot') { S.botToken++; S.busy = false; } // don't restore into a stuck 'thinking' state
+      disposeNeural();
+    });
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted && S.mode === 'bot' && S.game && S.game.toMove === botColor() && !S.busy) botTurn(); // bfcache resume
+    });
   }
 
   // ---------- version history ----------
@@ -745,6 +797,7 @@
 
   // ---------- mode / lang / theme ----------
   function setMode(m) {
+    var leftBot = (S.mode === 'bot' && m !== 'bot');
     S.mode = m;
     document.querySelectorAll('[data-mode]').forEach(function (b) {
       b.setAttribute('aria-pressed', b.getAttribute('data-mode') === m ? 'true' : 'false');
@@ -753,18 +806,25 @@
     $('sizeRow').hidden = (m === 'learn');
     $('colorRow').hidden = (m !== 'bot');       // colour choice only matters vs the bot
     $('difficultyRow').hidden = (m !== 'bot'); // difficulty only matters vs the bot
+    if (leftBot) disposeNeural(); // stopped playing the bot -> free the model
     if (m === 'learn') loadLesson(S.lessonIdx);
     else newGame();
   }
 
   function setDifficulty(d) {
+    var was = S.difficulty;
     S.difficulty = d;
     S.botToken++; // invalidate any in-flight bot move so a tier switch mid-think can't land a stale move
+    clearNeuralTimers();
+    if (was === 'neural' && d !== 'neural') disposeNeural(); // leaving the neural tier -> free the model
     localStorage.setItem('baduk.difficulty', d);
     document.querySelectorAll('[data-diff]').forEach(function (b) {
       b.setAttribute('aria-pressed', b.getAttribute('data-diff') === d ? 'true' : 'false');
     });
     $('diffNote').hidden = !(S.size >= 19); // difficulty has no effect on 19x19
+    // if the switch happened mid-think the board would be stuck busy with the bot to move;
+    // cancel and recompute under the new tier so it never deadlocks.
+    if (S.busy && S.mode === 'bot' && S.game && S.game.toMove === botColor()) { S.busy = false; botTurn(); }
   }
 
   function setHumanColor(c, restart) {
@@ -800,6 +860,7 @@
     S.snapshots = [];
     S.cursor = { x: Math.floor(S.size / 2), y: Math.floor(S.size / 2) };
     S.scoring = false; S.scoringOver = false; S.dead = null; S.busy = false; S.botToken++; // invalidate in-flight bot reply
+    clearNeuralTimers();
     $('scoreBox').hidden = true; $('scoreControls').hidden = true;
     $('diffNote').hidden = !(S.size >= 19);
     setMascot('idle', S.mode === 'bot' ? t('mascotPlay') : t('mascotHi'));
@@ -808,6 +869,7 @@
     setStatus('');
     // if the human chose White, the bot (Black) opens — Black always moves first
     if (S.mode === 'bot' && S.game.toMove === botColor()) botTurn();
+    else if (neural) scheduleNeuralIdleDispose(); // bot won't move now -> let an unused model time out
   }
 
   function applyLang() {
