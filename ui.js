@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.14.0';
+  var VERSION = '1.15.0';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.15.0', th: 'เตือนเมื่อเลือกนิวรัล (กินแรม ~1GB · เครื่องเล็กอาจค้าง)', en: 'Warn when picking Neural (~1 GB RAM; low-end devices may freeze)' },
     { v: '1.14.0', th: 'ความยากจริงบน 19×19: ยากใช้เน็ตเล็กทุกกระดาน, กลางใช้เน็ตบน 19×19', en: 'Real 19×19 difficulty: Hard uses a compact net everywhere, Medium on 19×19' },
     { v: '1.13.0', th: 'ลดแรม: คืนหน่วยความจำบอทนิวรัลเมื่อเลิกใช้/พักจอ', en: 'Lower memory: free the neural bot when unused / tab hidden' },
     { v: '1.12.0', th: 'ลื่นขึ้น: หมากไม่กระพริบตอนเลื่อนเมาส์ + ใช้แรมน้อยลง', en: 'Smoother: no stone flicker on hover + lower memory' },
@@ -50,6 +51,7 @@
       mascotOops: 'อุ๊ปส์ ตรงนั้นเดินไม่ได้', mascotWin: 'จบเกม มานับแต้มกัน', mascotPlay: 'ตาคุณแล้ว วางได้เลย',
       difficulty: 'ระดับความยาก', diffEasy: 'ง่าย', diffMedium: 'กลาง', diffHard: 'ยาก', diffNeural: 'นิวรัล',
       diffNote19: '19×19: กลาง/ยากใช้เน็ตเล็ก (โหลด ~4MB ครั้งแรก) · นิวรัล = แข็งสุด',
+      neuralWarn: '⚠ นิวรัลกินทรัพยากรหนัก (โหลด ~93MB · ใช้แรม ~1GB) — เครื่องแรมน้อย/มือถืออาจค้าง',
       neuralLoading: 'กำลังโหลดเอนจินนิวรัล KataGo ระดับดั้น (~90MB) … ครั้งแรกช้า แล้วจะ cache ไว้',
       neuralFail: 'โหลดนิวรัลไม่สำเร็จ ใช้บอทปกติแทน',
       playAs: 'คุณเล่นเป็น', botPlays: 'บอทเล่น', blackFirst: 'ดำเดินก่อน', takeTurns: 'เดินสลับกัน'
@@ -73,6 +75,7 @@
       mascotOops: 'Oops, you can\'t play there', mascotWin: 'Game over, let\'s count', mascotPlay: 'Your turn',
       difficulty: 'Difficulty', diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffNeural: 'Neural',
       diffNote19: '19×19: Medium/Hard use a compact net (~4 MB first load) · Neural = strongest',
+      neuralWarn: '⚠ Neural is heavy (~93 MB download, ~1 GB RAM) — low-RAM devices/phones may freeze',
       neuralLoading: 'Loading dan-level KataGo engine (~90MB)… slow first time, then cached',
       neuralFail: 'Neural failed to load; using the regular bot',
       playAs: 'You play', botPlays: 'Bot plays', blackFirst: 'Black moves first', takeTurns: 'take turns'
@@ -850,6 +853,13 @@
     else newGame();
   }
 
+  function updateDiffNote() { // warn when Neural is picked (any size); else the 19x19 ladder note
+    var note = $('diffNote');
+    if (S.difficulty === 'neural') { note.textContent = t('neuralWarn'); note.classList.add('warn'); note.hidden = false; }
+    else if (S.size >= 19) { note.textContent = t('diffNote19'); note.classList.remove('warn'); note.hidden = false; }
+    else { note.classList.remove('warn'); note.hidden = true; }
+  }
+
   function setDifficulty(d) {
     S.difficulty = d;
     S.botToken++; // invalidate any in-flight bot move so a tier switch mid-think can't land a stale move
@@ -859,7 +869,7 @@
     document.querySelectorAll('[data-diff]').forEach(function (b) {
       b.setAttribute('aria-pressed', b.getAttribute('data-diff') === d ? 'true' : 'false');
     });
-    $('diffNote').hidden = !(S.size >= 19);
+    updateDiffNote();
     // if the switch happened mid-think the board would be stuck busy with the bot to move;
     // cancel and recompute under the new tier so it never deadlocks.
     if (S.busy && S.mode === 'bot' && S.game && S.game.toMove === botColor()) { S.busy = false; botTurn(); }
@@ -902,7 +912,7 @@
     clearNeuralTimers();
     disposeKataIfStale(); // a size change can change which model (if any) the tier needs
     $('scoreBox').hidden = true; $('scoreControls').hidden = true;
-    $('diffNote').hidden = !(S.size >= 19);
+    updateDiffNote();
     setMascot('idle', S.mode === 'bot' ? t('mascotPlay') : t('mascotHi'));
     buildBoard();
     render();
@@ -934,7 +944,7 @@
     $('diffMed').textContent = t('diffMedium');
     $('diffHard').textContent = t('diffHard');
     $('diffNeural').textContent = t('diffNeural');
-    $('diffNote').textContent = t('diffNote19');
+    updateDiffNote();
     $('hintBtn').textContent = t('hint');
     $('gotItBtn').textContent = t('gotIt');
     $('prevLesson').textContent = '‹ ' + t('prev');
