@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.16.1';
+  var VERSION = '1.16.2';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.16.2', th: 'นิวรัล 19×19 กลับมาแรงเต็ม 256 visits (คิดนานขึ้น แต่ไม่ค้าง)', en: '19×19 Neural back to full 256 visits (thinks longer, no freeze)' },
     { v: '1.16.1', th: 'แก้นิวรัล 19×19 ทำเครื่องค้าง — ลดก้อนงาน GPU ต่อครั้ง', en: 'Fix 19×19 Neural machine freeze — smaller GPU work batches' },
     { v: '1.16.0', th: 'กันเครื่องค้าง: เครื่องที่ไม่ไหวกับเน็ตเต็ม นิวรัลใช้เน็ตเล็กแทนอัตโนมัติ', en: 'Anti-freeze: Neural auto-falls back to the compact net on weak machines' },
     { v: '1.15.1', th: 'ย่อรูปหมากโกอิชิซัง — โหลดไว ประหยัดแรมขึ้น', en: 'Smaller Goishi-san art — faster load, less memory' },
@@ -484,7 +485,9 @@
     // GPU dispatch that stalls the OS compositor (machine-wide freeze). Smaller batches
     // yield between dispatches, so the UI stays alive; search is a bit slower, that's fine.
     if (d === 'neural') {
-      if (n >= 19) return { visits: 128, maxTimeMs: 8000, batch: 4 };
+      // 19x19: full 256 visits at batch 4 — small dispatches keep the machine alive,
+      // the longer time cap just means the bot thinks ~2x longer per move.
+      if (n >= 19) return { visits: 256, maxTimeMs: 15000, batch: 4 };
       return { visits: 256, maxTimeMs: n <= 9 ? 4000 : 6000, batch: 8 };
     }
     if (d === 'hard') return { visits: n <= 13 ? 128 : 96, maxTimeMs: n <= 9 ? 1500 : n <= 13 ? 2000 : 2500, batch: 8 };
