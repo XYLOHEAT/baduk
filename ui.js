@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.16.0';
+  var VERSION = '1.16.1';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.16.1', th: 'แก้นิวรัล 19×19 ทำเครื่องค้าง — ลดก้อนงาน GPU ต่อครั้ง', en: 'Fix 19×19 Neural machine freeze — smaller GPU work batches' },
     { v: '1.16.0', th: 'กันเครื่องค้าง: เครื่องที่ไม่ไหวกับเน็ตเต็ม นิวรัลใช้เน็ตเล็กแทนอัตโนมัติ', en: 'Anti-freeze: Neural auto-falls back to the compact net on weak machines' },
     { v: '1.15.1', th: 'ย่อรูปหมากโกอิชิซัง — โหลดไว ประหยัดแรมขึ้น', en: 'Smaller Goishi-san art — faster load, less memory' },
     { v: '1.15.0', th: 'เตือนเมื่อเลือกนิวรัล (กินแรม ~1GB · เครื่องเล็กอาจค้าง)', en: 'Warn when picking Neural (~1 GB RAM; low-end devices may freeze)' },
@@ -479,9 +480,15 @@
     return null;
   }
   function kataBudget(d, n) {
-    if (d === 'neural') return { visits: 256, maxTimeMs: n <= 9 ? 4000 : n <= 13 ? 6000 : 10000 };
-    if (d === 'hard') return { visits: n <= 13 ? 128 : 96, maxTimeMs: n <= 9 ? 1500 : n <= 13 ? 2000 : 2500 };
-    return { visits: 32, maxTimeMs: 1200 };            // medium on 19x19
+    // batch: the worker's webgpu default is 16 — a batch-16 b18 eval on 19x19 is one huge
+    // GPU dispatch that stalls the OS compositor (machine-wide freeze). Smaller batches
+    // yield between dispatches, so the UI stays alive; search is a bit slower, that's fine.
+    if (d === 'neural') {
+      if (n >= 19) return { visits: 128, maxTimeMs: 8000, batch: 4 };
+      return { visits: 256, maxTimeMs: n <= 9 ? 4000 : 6000, batch: 8 };
+    }
+    if (d === 'hard') return { visits: n <= 13 ? 128 : 96, maxTimeMs: n <= 9 ? 1500 : n <= 13 ? 2000 : 2500, batch: 8 };
+    return { visits: 32, maxTimeMs: 1200, batch: 8 };  // medium on 19x19
   }
   function kataReady(modelUrl) { return !!(neural && neural.initialized && neural.modelUrl === modelUrl); }
 
@@ -580,7 +587,7 @@
         type: 'katago:analyze', id: token, modelUrl: modelUrl,
         board: toIntersections(S.game), currentPlayer: bc === BLACK ? 'black' : 'white',
         komi: S.game.komi, rules: 'chinese',
-        visits: b.visits, maxTimeMs: b.maxTimeMs, moveHistory: []
+        visits: b.visits, maxTimeMs: b.maxTimeMs, batchSize: b.batch, moveHistory: []
       });
     }).catch(function () {
       if (!isLiveKataTurn(token)) return;
