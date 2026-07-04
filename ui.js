@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.15.1';
+  var VERSION = '1.16.0';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.16.0', th: 'กันเครื่องค้าง: เครื่องที่ไม่ไหวกับเน็ตเต็ม นิวรัลใช้เน็ตเล็กแทนอัตโนมัติ', en: 'Anti-freeze: Neural auto-falls back to the compact net on weak machines' },
     { v: '1.15.1', th: 'ย่อรูปหมากโกอิชิซัง — โหลดไว ประหยัดแรมขึ้น', en: 'Smaller Goishi-san art — faster load, less memory' },
     { v: '1.15.0', th: 'เตือนเมื่อเลือกนิวรัล (กินแรม ~1GB · เครื่องเล็กอาจค้าง)', en: 'Warn when picking Neural (~1 GB RAM; low-end devices may freeze)' },
     { v: '1.14.0', th: 'ความยากจริงบน 19×19: ยากใช้เน็ตเล็กทุกกระดาน, กลางใช้เน็ตบน 19×19', en: 'Real 19×19 difficulty: Hard uses a compact net everywhere, Medium on 19×19' },
@@ -53,6 +54,7 @@
       difficulty: 'ระดับความยาก', diffEasy: 'ง่าย', diffMedium: 'กลาง', diffHard: 'ยาก', diffNeural: 'นิวรัล',
       diffNote19: '19×19: กลาง/ยากใช้เน็ตเล็ก (โหลด ~4MB ครั้งแรก) · นิวรัล = แข็งสุด',
       neuralWarn: '⚠ นิวรัลกินทรัพยากรหนัก (โหลด ~93MB · ใช้แรม ~1GB) — เครื่องแรมน้อย/มือถืออาจค้าง',
+      neuralLite: 'เครื่องนี้ไม่เหมาะกับเน็ตเต็ม (ต้องมี WebGPU + แรมพอ) — นิวรัลจะใช้เน็ตเล็กแบบคิดเต็มที่แทน กันเครื่องค้าง',
       neuralLoading: 'กำลังโหลดเอนจินนิวรัล KataGo ระดับดั้น (~90MB) … ครั้งแรกช้า แล้วจะ cache ไว้',
       neuralFail: 'โหลดนิวรัลไม่สำเร็จ ใช้บอทปกติแทน',
       playAs: 'คุณเล่นเป็น', botPlays: 'บอทเล่น', blackFirst: 'ดำเดินก่อน', takeTurns: 'เดินสลับกัน'
@@ -77,6 +79,7 @@
       difficulty: 'Difficulty', diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffNeural: 'Neural',
       diffNote19: '19×19: Medium/Hard use a compact net (~4 MB first load) · Neural = strongest',
       neuralWarn: '⚠ Neural is heavy (~93 MB download, ~1 GB RAM) — low-RAM devices/phones may freeze',
+      neuralLite: 'This device can\'t take the full net (needs WebGPU + enough RAM) — Neural will use the compact net at full strength instead, so it won\'t freeze',
       neuralLoading: 'Loading dan-level KataGo engine (~90MB)… slow first time, then cached',
       neuralFail: 'Neural failed to load; using the regular bot',
       playAs: 'You play', botPlays: 'Bot plays', blackFirst: 'Black moves first', takeTurns: 'take turns'
@@ -462,9 +465,15 @@
   var neuralWatchdog = 0;   // timer id for the in-flight analyze
   var neuralIdleTimer = 0;  // terminate-when-idle timer
 
+  // Can this machine actually run the ~93MB b18 net? Without WebGPU the worker falls back
+  // to WASM = b18 inference on the CPU (all cores pegged, big non-shrinking heap) and the
+  // load itself peaks ~0.5GB — that's what freezes low-end machines. In that case Neural
+  // silently uses the compact net at full visits: the strongest thing the machine can take.
+  var B18_CAPABLE = !!navigator.gpu && (navigator.deviceMemory === undefined || navigator.deviceMemory >= 8);
+
   // which KataGo net (if any) a tier uses at a board size; null => local engine (greedy / flat MC)
   function kataModel(d, n) {
-    if (d === 'neural') return NEURAL_MODEL;            // b18 dan, any size
+    if (d === 'neural') return B18_CAPABLE ? NEURAL_MODEL : SMALL_MODEL; // b18 dan — or the compact net on weak machines
     if (d === 'hard') return SMALL_MODEL;              // compact net, any size
     if (d === 'medium' && n >= 19) return SMALL_MODEL;  // compact net on big boards only
     return null;
@@ -499,8 +508,11 @@
   function scheduleNeuralIdleDispose() {
     if (neuralIdleTimer) clearTimeout(neuralIdleTimer);
     // free the model after a quiet spell: a short pause shouldn't pay the reload cost,
-    // but a finished session shouldn't keep the model resident.
-    neuralIdleTimer = setTimeout(function () { if (!S.busy) disposeNeural(); }, document.hidden ? 30000 : 300000);
+    // but a finished session shouldn't keep the model resident. Mid-game we keep it longer
+    // even when hidden — re-parsing the big net on every tab switch is its own freeze.
+    var midGame = S.mode === 'bot' && S.game && S.game.moveNumber > 0 && !S.scoringOver;
+    var delay = !document.hidden ? 300000 : (midGame ? 180000 : 30000);
+    neuralIdleTimer = setTimeout(function () { if (!S.busy) disposeNeural(); }, delay);
   }
 
   function ensureKata(modelUrl) {
@@ -856,7 +868,7 @@
 
   function updateDiffNote() { // warn when Neural is picked (any size); else the 19x19 ladder note
     var note = $('diffNote');
-    if (S.difficulty === 'neural') { note.textContent = t('neuralWarn'); note.classList.add('warn'); note.hidden = false; }
+    if (S.difficulty === 'neural') { note.textContent = t(B18_CAPABLE ? 'neuralWarn' : 'neuralLite'); note.classList.add('warn'); note.hidden = false; }
     else if (S.size >= 19) { note.textContent = t('diffNote19'); note.classList.remove('warn'); note.hidden = false; }
     else { note.classList.remove('warn'); note.hidden = true; }
   }
