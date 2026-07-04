@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.15.0';
+  var VERSION = '1.15.1';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.15.1', th: 'ย่อรูปหมากโกอิชิซัง — โหลดไว ประหยัดแรมขึ้น', en: 'Smaller Goishi-san art — faster load, less memory' },
     { v: '1.15.0', th: 'เตือนเมื่อเลือกนิวรัล (กินแรม ~1GB · เครื่องเล็กอาจค้าง)', en: 'Warn when picking Neural (~1 GB RAM; low-end devices may freeze)' },
     { v: '1.14.0', th: 'ความยากจริงบน 19×19: ยากใช้เน็ตเล็กทุกกระดาน, กลางใช้เน็ตบน 19×19', en: 'Real 19×19 difficulty: Hard uses a compact net everywhere, Medium on 19×19' },
     { v: '1.13.0', th: 'ลดแรม: คืนหน่วยความจำบอทนิวรัลเมื่อเลิกใช้/พักจอ', en: 'Lower memory: free the neural bot when unused / tab hidden' },
