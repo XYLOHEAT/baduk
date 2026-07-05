@@ -42,10 +42,13 @@ that repository. Also bundled: `pako` (MIT) and `jszip` (MIT or GPLv3, used here
 ## KataGo networks
 From the **KataGo** project by David Wu (lightvector) — networks are released for free use.
 https://github.com/lightvector/KataGo · https://katagotraining.org/
-- **Active (Neural tier):** `kata1-b18c384nbt-s9996604416-d4316597426` (~93MB, dan strength).
+- **Neural tier:** `kata1-b18c384nbt-s9996604416-d4316597426` (~93MB, dan strength).
   Too large for a Pages static file (25 MiB limit), so it is stored in Cloudflare R2
   and streamed same-origin via `functions/models/[[path]].js`. Not committed to git.
   (No static `models/` directory is shipped, so the Function owns the `/models/*` route.)
+- **Hard tier (and Medium on 19×19):** `g170-b6c96-s175395328-d26788732` (~3.8MB compact
+  net), committed and shipped as a static asset at `assets/models/kata-small-b6c96.bin.gz`.
+  Also used by the Neural tier on machines that can't run the b18 net.
 
 ## 碁石さん (Goishi-san) mascot artwork
 The teaching mascot images in `assets/mascot/` (idle/happy/think/oops) are the

@@ -3,11 +3,11 @@
  * Flat Monte-Carlo: for each candidate move (plus pass), play random games to the
  * end and keep the move with the best win rate for the bot. No neural net, no model,
  * no network — pure playouts. Modest amateur strength on 9x9/13x13.
- * ponytail: flat MC, not UCT/neural. Good for a beginner opponent; swap in a net
- *   (KataGo WASM) only if real dan-level strength is ever required.
+ * Used by the Medium tier on 9x9/13x13 only; Hard/Neural (and Medium on 19x19)
+ * run KataGo nets in neural-worker.js — see kataModel() in ui.js.
  */
 /* global GoEngine, importScripts, postMessage, onmessage */
-importScripts('engine.js?v=1.16.3'); // keep in sync with VERSION (cache-bust)
+importScripts('engine.js?v=1.16.4'); // keep in sync with VERSION (cache-bust)
 var E = GoEngine, EMPTY = E.EMPTY;
 
 function isEye(g, i, color) {

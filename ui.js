@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.16.3';
+  var VERSION = '1.16.4';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.16.4', th: 'เก็บกวาดโค้ด + แก้บั๊กย่อย (พิกัดข้าม I, กันบอทเดินซ้ำ)', en: 'Cleanup + small fixes (Go coords skip I, no double bot moves)' },
     { v: '1.16.3', th: 'นิวรัล 19×19 คิดเร็วขึ้น (แรงเท่าเดิม ไม่ค้าง)', en: '19×19 Neural thinks faster (same strength, still no freeze)' },
     { v: '1.16.2', th: 'นิวรัล 19×19 กลับมาแรงเต็ม 256 visits (คิดนานขึ้น แต่ไม่ค้าง)', en: '19×19 Neural back to full 256 visits (thinks longer, no freeze)' },
     { v: '1.16.1', th: 'แก้นิวรัล 19×19 ทำเครื่องค้าง — ลดก้อนงาน GPU ต่อครั้ง', en: 'Fix 19×19 Neural machine freeze — smaller GPU work batches' },
@@ -59,6 +60,7 @@
       neuralWarn: '⚠ นิวรัลกินทรัพยากรหนัก (โหลด ~93MB · ใช้แรม ~1GB) — เครื่องแรมน้อย/มือถืออาจค้าง',
       neuralLite: 'เครื่องนี้ไม่เหมาะกับเน็ตเต็ม (ต้องมี WebGPU + แรมพอ) — นิวรัลจะใช้เน็ตเล็กแบบคิดเต็มที่แทน กันเครื่องค้าง',
       neuralLoading: 'กำลังโหลดเอนจินนิวรัล KataGo ระดับดั้น (~90MB) … ครั้งแรกช้า แล้วจะ cache ไว้',
+      smallLoading: 'กำลังโหลดเน็ตเล็ก (~4MB) …',
       neuralFail: 'โหลดนิวรัลไม่สำเร็จ ใช้บอทปกติแทน',
       playAs: 'คุณเล่นเป็น', botPlays: 'บอทเล่น', blackFirst: 'ดำเดินก่อน', takeTurns: 'เดินสลับกัน'
     },
@@ -84,6 +86,7 @@
       neuralWarn: '⚠ Neural is heavy (~93 MB download, ~1 GB RAM) — low-RAM devices/phones may freeze',
       neuralLite: 'This device can\'t take the full net (needs WebGPU + enough RAM) — Neural will use the compact net at full strength instead, so it won\'t freeze',
       neuralLoading: 'Loading dan-level KataGo engine (~90MB)… slow first time, then cached',
+      smallLoading: 'Loading the compact net (~4 MB)…',
       neuralFail: 'Neural failed to load; using the regular bot',
       playAs: 'You play', botPlays: 'Bot plays', blackFirst: 'Black moves first', takeTurns: 'take turns'
     }
@@ -122,10 +125,6 @@
   // settled stone (kept stable per position so a stone's resting face doesn't flicker).
   var CALM_FACES = [11, 3, 17, 18];
 
-  // mascot guide: the licensed 碁石さん art will be dropped into #mascot later
-  // (pending the creator's OK). For now only the speech line (#mascotMsg) is used;
-  // setMascot() also stamps data-state so swapped-in art can animate per reaction.
-
   // ---------- helpers ----------
   function cloneGame(g) {
     return {
@@ -136,6 +135,12 @@
     };
   }
   function px(v) { return PAD + v; }
+  function colorName(c) { return c === BLACK ? t('black') : t('white'); }
+  function setPressed(attr, val) { // segmented controls share one aria-pressed pattern
+    document.querySelectorAll('[' + attr + ']').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute(attr) === String(val) ? 'true' : 'false');
+    });
+  }
   function el(tag, attrs) {
     var e = document.createElementNS(SVGNS, tag);
     for (var k in attrs) if (attrs.hasOwnProperty(k)) e.setAttribute(k, attrs[k]);
@@ -310,7 +315,7 @@
     $('turnLabel').textContent = t('turn');
     var sw = $('turnSwatch');
     sw.className = 'swatch ' + (turnC === BLACK ? 'black' : 'white');
-    $('turnName').textContent = turnC === BLACK ? t('black') : t('white');
+    $('turnName').textContent = colorName(turnC);
 
     // panel content depends on mode
     if (S.mode === 'learn') {
@@ -326,9 +331,7 @@
     } else {
       $('panelTitle').textContent = S.mode === 'bot' ? t('modeBot') : t('modePlay');
       if (S.mode === 'bot') {
-        var hName = S.humanColor === BLACK ? t('black') : t('white');
-        var bName = botColor() === BLACK ? t('black') : t('white');
-        $('panelBody').textContent = t('playAs') + ' ' + hName + ' · ' + t('botPlays') + ' ' + bName + ' · ' + t('blackFirst');
+        $('panelBody').textContent = t('playAs') + ' ' + colorName(S.humanColor) + ' · ' + t('botPlays') + ' ' + colorName(botColor()) + ' · ' + t('blackFirst');
       } else {
         $('panelBody').textContent = (S.lang === 'th' ? 'ผลัดกันเดินบนเครื่องเดียว ดำเริ่มก่อน' : 'Hot-seat on one device. Black starts.');
       }
@@ -341,6 +344,13 @@
 
   // ---------- moves ----------
   function snapshot() { S.snapshots.push(cloneGame(S.game)); if (S.snapshots.length > 400) S.snapshots.shift(); }
+
+  function resetRound() { // shared new-game / lesson reset; invalidates any in-flight bot reply
+    S.snapshots = [];
+    S.cursor = { x: Math.floor(S.size / 2), y: Math.floor(S.size / 2) };
+    S.scoring = false; S.scoringOver = false; S.dead = null; S.busy = false; S.botToken++;
+    $('scoreBox').hidden = true; $('scoreControls').hidden = true;
+  }
 
   function reasonMsg(r) {
     return r === 'occupied' ? t('illegalOccupied') : r === 'ko' ? t('illegalKo')
@@ -374,9 +384,9 @@
     if (S.mode === 'bot' && g.toMove === botColor()) botTurn();
   }
 
+  var COLS = 'ABCDEFGHJKLMNOPQRST'; // Go coordinates skip the letter I
   function announceMove(res, color, x, y) {
-    var nm = (color === BLACK ? t('black') : t('white'));
-    var msg = nm + ' ' + String.fromCharCode(65 + x) + (S.size - y);
+    var msg = colorName(color) + ' ' + COLS.charAt(x) + (S.size - y);
     if (res.captured && res.captured.length) { msg += ' · +' + res.captured.length; setMascot('happy', t('mascotGood')); }
     setStatus(msg);
   }
@@ -385,7 +395,7 @@
     if (S.busy || S.scoring) return; // not while counting at game end
     snapshot();
     var r = E.pass(S.game);
-    setStatus((S.game.lastMove.color === BLACK ? t('black') : t('white')) + ' ' + t('passLabel'));
+    setStatus(colorName(S.game.lastMove.color) + ' ' + t('passLabel'));
     render();
     if (r.ended) { endGame(); return; }
     if (S.mode === 'bot' && S.game.toMove === botColor()) botTurn();
@@ -398,6 +408,9 @@
     if (S.mode === 'bot' && S.game.toMove === botColor() && S.snapshots.length) S.game = S.snapshots.pop();
     setStatus('');
     render();
+    // human-plays-White corner: undoing the bot's opener leaves the bot to move with no
+    // snapshot left — hand the turn back to the bot instead of letting the human play its colour
+    if (S.mode === 'bot' && S.game.toMove === botColor()) botTurn();
   }
 
   function flashInvalid(x, y) {
@@ -407,15 +420,14 @@
   }
 
   // ---------- bot ----------
-  // Difficulty maps to engine + thinking budget:
-  //   easy   -> greedy heuristic (weak, instant) at any size
-  //   medium -> Monte-Carlo, short budget   (worker.js)
-  //   hard   -> Monte-Carlo, long budget     (reads more, stronger)
-  // Monte-Carlo runs on 9x9 / 13x13 only; on 19x19 flat MC is too slow/weak in JS,
-  // so every level falls back to the greedy heuristic there.
-  function botBudgetMs() {
-    if (S.difficulty === 'medium') return S.size <= 9 ? 500 : 750;
-    return S.size <= 9 ? 1400 : 1900; // hard
+  // Difficulty routing (kataModel decides which net, if any):
+  //   easy   -> greedy heuristic (instant, any size)
+  //   medium -> flat Monte-Carlo on 9x9/13x13, compact net on 19x19
+  //   hard   -> compact net, any size
+  //   neural -> b18 dan net (compact instead on machines that can't take it)
+  // Greedy stays as the universal failure fallback.
+  function botBudgetMs() { // flat-MC budget — only Medium on <=13 uses worker.js now
+    return S.size <= 9 ? 500 : 750;
   }
 
   function botTurn() {
@@ -454,7 +466,11 @@
         if (e.data.token !== S.botToken) return; // stale reply (new game / mode change)
         applyBotMove(e.data.pass ? null : { x: e.data.x, y: e.data.y });
       };
-      botWorker.onerror = function () { if (S.busy) applyBotMove(botMove(S.game, botColor())); }; // recover only if a turn is live
+      botWorker.onerror = function () {
+        if (!S.busy) return;                    // no live turn -> nothing to recover
+        S.botToken++;                           // a late reply from this worker must not double-move
+        applyBotMove(botMove(S.game, botColor()));
+      };
     }
     return botWorker;
   }
@@ -540,8 +556,12 @@
         // katago:analyze_update progress — ignore
       };
       worker.onerror = function () {
-        if (!obj.initialized) { reject(new Error('neural worker error')); }
-        else if (obj === neural && S.busy) { setStatus(t('neuralFail')); applyBotMove(botMove(S.game, botColor())); } // recover a stuck analysis
+        if (!obj.initialized) { reject(new Error('neural worker error')); return; }
+        if (obj !== neural || !S.busy) return;  // stale generation / no live turn
+        S.botToken++;                           // a late analyze_result must not double-move
+        if (neuralWatchdog) { clearTimeout(neuralWatchdog); neuralWatchdog = 0; }
+        setStatus(t('neuralFail'));
+        applyBotMove(botMove(S.game, botColor()));
       };
     });
     worker.postMessage({ type: 'katago:init', modelUrl: modelUrl });
@@ -570,7 +590,10 @@
       var bm = bookMove(S.game);
       if (bm) { applyBotMove(bm); return; }
     }
-    if (cold) { setStatus(t('neuralLoading')); setMascot('think', t('neuralLoading')); }
+    if (cold) {
+      var loadMsg = t(modelUrl === NEURAL_MODEL ? 'neuralLoading' : 'smallLoading'); // honest size per model
+      setStatus(loadMsg); setMascot('think', loadMsg);
+    }
     if (neuralWatchdog) clearTimeout(neuralWatchdog);
     // Watchdog: a stalled worker (WASM deadlock, or a model load/network hang) must never
     // freeze the board. After a grace period, terminate it and fall back to the local bot.
@@ -694,10 +717,7 @@
       S.game.board[E.idx(S.game, st[0], st[1])] = st[2] === 'B' ? BLACK : WHITE;
     });
     S.game.toMove = L.toMove;
-    S.snapshots = [];
-    S.cursor = { x: Math.floor(L.size / 2), y: Math.floor(L.size / 2) };
-    S.scoring = false; S.scoringOver = false; S.dead = null; S.busy = false; S.botToken++;
-    $('scoreBox').hidden = true; $('scoreControls').hidden = true;
+    resetRound();
     buildBoard();
     render();
     setStatus('');
@@ -748,7 +768,7 @@
   }
 
   function updateScoreLive() {
-    var sc = E.score(S.game, S.dead ? Array.from(S.dead) : null);
+    var sc = E.score(S.game, S.dead); // engine accepts any forEach-able (Set included)
     $('scoreBox').hidden = false;
     var who = sc.winner === BLACK ? t('winnerBlack') : sc.winner === WHITE ? t('winnerWhite') : t('tie');
     var result = sc.winner === 0 ? who : who + ' ' + t('by') + ' ' + sc.margin.toFixed(1) + ' ' + t('points');
@@ -842,7 +862,7 @@
       disposeNeural();
     });
     window.addEventListener('pageshow', function (e) {
-      if (e.persisted && S.mode === 'bot' && S.game && S.game.toMove === botColor() && !S.busy) botTurn(); // bfcache resume
+      if (e.persisted && S.mode === 'bot' && S.game && S.game.toMove === botColor() && !S.busy && !S.scoring) botTurn(); // bfcache resume
     });
   }
 
@@ -865,9 +885,7 @@
   function setMode(m) {
     var leftBot = (S.mode === 'bot' && m !== 'bot');
     S.mode = m;
-    document.querySelectorAll('[data-mode]').forEach(function (b) {
-      b.setAttribute('aria-pressed', b.getAttribute('data-mode') === m ? 'true' : 'false');
-    });
+    setPressed('data-mode', m);
     $('scoreBox').hidden = true;
     $('sizeRow').hidden = (m === 'learn');
     $('colorRow').hidden = (m !== 'bot');       // colour choice only matters vs the bot
@@ -890,9 +908,7 @@
     clearNeuralTimers();
     disposeKataIfStale();   // drop the worker if the new tier needs a different model (or none)
     localStorage.setItem('baduk.difficulty', d);
-    document.querySelectorAll('[data-diff]').forEach(function (b) {
-      b.setAttribute('aria-pressed', b.getAttribute('data-diff') === d ? 'true' : 'false');
-    });
+    setPressed('data-diff', d);
     updateDiffNote();
     // if the switch happened mid-think the board would be stuck busy with the bot to move;
     // cancel and recompute under the new tier so it never deadlocks.
@@ -903,9 +919,7 @@
   function setHumanColor(c, restart) {
     S.humanColor = c;
     localStorage.setItem('baduk.humanColor', String(c));
-    document.querySelectorAll('[data-color]').forEach(function (b) {
-      b.setAttribute('aria-pressed', parseInt(b.getAttribute('data-color'), 10) === c ? 'true' : 'false');
-    });
+    setPressed('data-color', c);
     if (restart && S.mode === 'bot') newGame(); // who opens changes, so start fresh
   }
 
@@ -922,20 +936,15 @@
     localStorage.setItem('baduk.stoneStyle', s);
     if (svg) svg.classList.toggle('mascot-stones', s === 'mascot'); // disables the heavy group drop-shadow for <image> stones
     if (s === 'mascot') preloadMascot();                            // warm the HTTP/decode cache so faces don't pop in
-    document.querySelectorAll('[data-stone]').forEach(function (b) {
-      b.setAttribute('aria-pressed', b.getAttribute('data-stone') === s ? 'true' : 'false');
-    });
+    setPressed('data-stone', s);
     if (S.game) render();
   }
 
   function newGame() {
     S.game = E.createGame(S.size, 6.5);
-    S.snapshots = [];
-    S.cursor = { x: Math.floor(S.size / 2), y: Math.floor(S.size / 2) };
-    S.scoring = false; S.scoringOver = false; S.dead = null; S.busy = false; S.botToken++; // invalidate in-flight bot reply
+    resetRound();
     clearNeuralTimers();
     disposeKataIfStale(); // a size change can change which model (if any) the tier needs
-    $('scoreBox').hidden = true; $('scoreControls').hidden = true;
     updateDiffNote();
     setMascot('idle', S.mode === 'bot' ? t('mascotPlay') : t('mascotHi'));
     buildBoard();

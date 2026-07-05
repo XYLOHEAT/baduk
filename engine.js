@@ -243,7 +243,31 @@
     dg.board[G.idx(dg, 1, 1)] = WHITE; // a dead white stone in the centre
     var dsc = G.score(dg, [G.idx(dg, 1, 1)]);
     assert(dsc.black === 9 && dsc.whiteArea === 0, 'dead-stone scoring wrong: ' + JSON.stringify(dsc));
+    // the ui passes a Set (score only needs .forEach) — lock that in
+    if (typeof Set !== 'undefined') {
+      var dscSet = G.score(dg, new Set([G.idx(dg, 1, 1)]));
+      assert(dscSet.black === 9 && dscSet.whiteArea === 0, 'Set dead-stone scoring wrong: ' + JSON.stringify(dscSet));
+    }
 
-    console.log('engine.js self-check PASS: capture, suicide, capturing-suicide, ko, scoring, dead-stones');
+    // pass: clears the ko point, alternates the turn, and two in a row end the game
+    var pg = G.createGame(5, 0.5);
+    [[3,2],[1,2],[2,1],[2,3]].forEach(function (p) { pg.board[G.idx(pg, p[0], p[1])] = WHITE; });
+    [[4,2],[3,1],[3,3]].forEach(function (p) { pg.board[G.idx(pg, p[0], p[1])] = BLACK; });
+    pg.toMove = BLACK;
+    G.play(pg, 2, 2, BLACK);
+    assert(pg.ko >= 0, 'ko not set before pass');
+    var p1 = G.pass(pg);
+    assert(pg.ko === -1, 'pass did not clear the ko point');
+    assert(!p1.ended && pg.toMove === BLACK && pg.lastMove.pass, 'single pass state wrong');
+    var p2 = G.pass(pg);
+    assert(p2.ended && pg.passes === 2, 'two consecutive passes did not end the game');
+
+    // illegal-move reasons are stable (the ui maps them to messages)
+    var rg = G.createGame(5, 0.5);
+    assert(G.play(rg, -1, 0, BLACK).reason === 'offboard', 'offboard reason wrong');
+    G.play(rg, 1, 1, BLACK);
+    assert(G.play(rg, 1, 1, WHITE).reason === 'occupied', 'occupied reason wrong');
+
+    console.log('engine.js self-check PASS: capture, suicide, capturing-suicide, ko, scoring, dead-stones (array+Set), pass/ko/end, illegal reasons');
   }
 })(typeof window !== 'undefined' ? window : this);
