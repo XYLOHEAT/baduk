@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.16.4';
+  var VERSION = '1.17.0';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.17.0', th: 'บทเรียนใหม่ 5 บท: เชื่อม/ตัด · บันได · สแนปแบ็ก · ตาปลอม · การจบเกม (รวม 12 บท)', en: '5 new lessons: connect/cut · ladder · snapback · false eyes · game endings (12 total)' },
     { v: '1.16.4', th: 'เก็บกวาดโค้ด + แก้บั๊กย่อย (พิกัดข้าม I, กันบอทเดินซ้ำ)', en: 'Cleanup + small fixes (Go coords skip I, no double bot moves)' },
     { v: '1.16.3', th: 'นิวรัล 19×19 คิดเร็วขึ้น (แรงเท่าเดิม ไม่ค้าง)', en: '19×19 Neural thinks faster (same strength, still no freeze)' },
     { v: '1.16.2', th: 'นิวรัล 19×19 กลับมาแรงเต็ม 256 visits (คิดนานขึ้น แต่ไม่ค้าง)', en: '19×19 Neural back to full 256 visits (thinks longer, no freeze)' },
