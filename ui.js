@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.17.0';
+  var VERSION = '1.17.1';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.17.1', th: 'ปรับสีหน้าหมากตามคำแนะนำของผู้วาด (とろろ)', en: 'Stone expressions tuned per the artist\'s (とろろ) review' },
     { v: '1.17.0', th: 'บทเรียนใหม่ 5 บท: เชื่อม/ตัด · บันได · สแนปแบ็ก · ตาปลอม · การจบเกม (รวม 12 บท)', en: '5 new lessons: connect/cut · ladder · snapback · false eyes · game endings (12 total)' },
     { v: '1.16.4', th: 'เก็บกวาดโค้ด + แก้บั๊กย่อย (พิกัดข้าม I, กันบอทเดินซ้ำ)', en: 'Cleanup + small fixes (Go coords skip I, no double bot moves)' },
     { v: '1.16.3', th: 'นิวรัล 19×19 คิดเร็วขึ้น (แรงเท่าเดิม ไม่ค้าง)', en: '19×19 Neural thinks faster (same strength, still no freeze)' },
@@ -125,6 +126,8 @@
   // genuinely-calm 碁石さん faces — the only non-situational pick, for a plain
   // settled stone (kept stable per position so a stone's resting face doesn't flicker).
   var CALM_FACES = [11, 3, 17, 18];
+  // angry faces (per the artist: 15 is anger, not panic) — for "a friend was just captured"
+  var ANGRY_FACES = [1, 5, 15];
 
   // ---------- helpers ----------
   function cloneGame(g) {
@@ -194,9 +197,9 @@
       });
     }
 
-    // mascot stones: precompute group liberties + sizes, the star-point set, and
-    // what the last move just captured — so each stone can pick a fitting expression.
-    var libOf = null, sizeOf = null, starSet = null, capSet = null, capColor = 0;
+    // mascot stones: precompute group liberties + sizes, and what the last move
+    // just captured — so each stone can pick a fitting expression.
+    var libOf = null, sizeOf = null, capSet = null, capColor = 0;
     if (S.stoneStyle === 'mascot') {
       libOf = {}; sizeOf = {};
       for (var gi = 0; gi < g.board.length; gi++) {
@@ -204,8 +207,6 @@
         var grp = E.group(g, gi), lc = grp.liberties.length, sz = grp.stones.length, s;
         for (s = 0; s < sz; s++) { libOf[grp.stones[s]] = lc; sizeOf[grp.stones[s]] = sz; }
       }
-      starSet = {};
-      starPoints(n).forEach(function (p) { starSet[p[1] * n + p[0]] = 1; });
       capSet = {};
       if (g.lastMove && g.lastMove.captured) {
         g.lastMove.captured.forEach(function (ci) { capSet[ci] = 1; });
@@ -243,19 +244,20 @@
         }
         var capN = (justPlaced && g.lastMove.captured) ? g.lastMove.captured.length : 0;
         var hash = (i * 2654435761 >>> 0);
+        // face meanings confirmed by the artist (とろろ): 4 = about to be captured,
+        // 12 = doomed and resigned to it, 15 = angry (NOT panic), 16 = sleeping.
         var fn;
         if (S.scoring && S.dead && S.dead.has(i)) fn = 16;       // marked dead -> sleeping
-        else if (libOf[i] === 1) fn = sizeOf[i] >= 4 ? 4 : 15;  // atari: big group doomed -> pale shock, else panic
+        else if (libOf[i] === 1) fn = sizeOf[i] >= 4 ? 12 : 4;  // atari: big group -> resigned to its fate, else about-to-be-captured
         else if (capN >= 3) fn = 14;                            // just captured a big group -> big laugh
         else if (capN >= 1) fn = 2;                             // just captured -> smug
-        else if (friendLost) fn = (hash & 1) ? 1 : 5;          // a friend was just captured beside us -> angry
+        else if (friendLost) fn = ANGRY_FACES[hash % ANGRY_FACES.length]; // a friend was just captured beside us -> angry
         else if (libOf[i] === 2) fn = 8;                        // 2 liberties -> worried
         else if (justPlaced) fn = attacks ? 10 : 13;           // just placed: sneaky if it threatens, else happy
         else if (attacks) fn = 10;                             // threatening an enemy group -> mischievous
         else if (koNext) fn = 6;                               // beside the ko point -> pouty
         else if (libOf[i] === 3) fn = 9;                       // getting hemmed in -> uneasy
         else if (libOf[i] >= 6 || sizeOf[i] >= 5) fn = 7;      // strong / large group -> content
-        else if (starSet[i]) fn = 12;                          // star point -> the special card
         else fn = CALM_FACES[hash % CALM_FACES.length];        // plain settled stone -> calm
         layerStone.appendChild(el('image', {
           x: px(x) - R, y: px(y) - R, width: 2 * R, height: 2 * R,
