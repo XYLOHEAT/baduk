@@ -44,8 +44,10 @@ LESSONS.forEach(function (L) {
   }
   // markers must be in bounds
   (L.markers || []).forEach(function (m) { assert(G.inB(g, m[0], m[1]), L.id + ': marker off board ' + m); });
-  assert(L.title.th && L.title.en && L.body.th && L.body.en && L.goal.th && L.goal.en
-    && L.success.th && L.success.en, L.id + ': missing a TH/EN string');
+  ['th', 'en', 'ja'].forEach(function (lang) {
+    assert(L.title[lang] && L.body[lang] && L.goal[lang] && L.success[lang],
+      L.id + ': missing a ' + lang.toUpperCase() + ' string');
+  });
 
   if (L.manualDone) { assert(L.check(g) === false, L.id + ': manualDone lesson must not auto-complete'); return; }
 
@@ -66,4 +68,4 @@ var eg = build(endL);
 G.pass(eg);
 assert(G.pass(eg).ended, 'ending: two passes did not end the game');
 
-console.log('test-lessons PASS: ' + LESSONS.length + ' lessons — prefills legal, solutions complete, TH/EN strings present');
+console.log('test-lessons PASS: ' + LESSONS.length + ' lessons — prefills legal, solutions complete, TH/EN/JA strings present');

@@ -7,32 +7,33 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.17.1';
+  var VERSION = '1.18.0';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
-    { v: '1.17.1', th: 'ปรับสีหน้าหมากตามคำแนะนำของผู้วาด (とろろ)', en: 'Stone expressions tuned per the artist\'s (とろろ) review' },
-    { v: '1.17.0', th: 'บทเรียนใหม่ 5 บท: เชื่อม/ตัด · บันได · สแนปแบ็ก · ตาปลอม · การจบเกม (รวม 12 บท)', en: '5 new lessons: connect/cut · ladder · snapback · false eyes · game endings (12 total)' },
-    { v: '1.16.4', th: 'เก็บกวาดโค้ด + แก้บั๊กย่อย (พิกัดข้าม I, กันบอทเดินซ้ำ)', en: 'Cleanup + small fixes (Go coords skip I, no double bot moves)' },
-    { v: '1.16.3', th: 'นิวรัล 19×19 คิดเร็วขึ้น (แรงเท่าเดิม ไม่ค้าง)', en: '19×19 Neural thinks faster (same strength, still no freeze)' },
-    { v: '1.16.2', th: 'นิวรัล 19×19 กลับมาแรงเต็ม 256 visits (คิดนานขึ้น แต่ไม่ค้าง)', en: '19×19 Neural back to full 256 visits (thinks longer, no freeze)' },
-    { v: '1.16.1', th: 'แก้นิวรัล 19×19 ทำเครื่องค้าง — ลดก้อนงาน GPU ต่อครั้ง', en: 'Fix 19×19 Neural machine freeze — smaller GPU work batches' },
-    { v: '1.16.0', th: 'กันเครื่องค้าง: เครื่องที่ไม่ไหวกับเน็ตเต็ม นิวรัลใช้เน็ตเล็กแทนอัตโนมัติ', en: 'Anti-freeze: Neural auto-falls back to the compact net on weak machines' },
-    { v: '1.15.1', th: 'ย่อรูปหมากโกอิชิซัง — โหลดไว ประหยัดแรมขึ้น', en: 'Smaller Goishi-san art — faster load, less memory' },
-    { v: '1.15.0', th: 'เตือนเมื่อเลือกนิวรัล (กินแรม ~1GB · เครื่องเล็กอาจค้าง)', en: 'Warn when picking Neural (~1 GB RAM; low-end devices may freeze)' },
-    { v: '1.14.0', th: 'ความยากจริงบน 19×19: ยากใช้เน็ตเล็กทุกกระดาน, กลางใช้เน็ตบน 19×19', en: 'Real 19×19 difficulty: Hard uses a compact net everywhere, Medium on 19×19' },
-    { v: '1.13.0', th: 'ลดแรม: คืนหน่วยความจำบอทนิวรัลเมื่อเลิกใช้/พักจอ', en: 'Lower memory: free the neural bot when unused / tab hidden' },
-    { v: '1.12.0', th: 'ลื่นขึ้น: หมากไม่กระพริบตอนเลื่อนเมาส์ + ใช้แรมน้อยลง', en: 'Smoother: no stone flicker on hover + lower memory' },
-    { v: '1.11.0', th: 'เพิ่มประวัติเวอร์ชันในเว็บ', en: 'In-app version history' },
-    { v: '1.10.0', th: 'หน้าหมากตามสถานการณ์ + ไกด์สีชมพู', en: 'Situation-based stone faces + pink guide' },
-    { v: '1.9.0', th: 'ใช้สีหน้า 碁石さん ครบ 18 แบบ', en: 'All 18 碁石さん expressions used' },
-    { v: '1.8.0', th: 'หมากมีอารมณ์ครบ (กังวล/ตกใจ/ตาย)', en: 'Full stone emotions (worried/scared/dead)' },
-    { v: '1.7.0', th: 'หมากเปลี่ยนสีหน้าเมื่อจะโดนกิน', en: 'Stones react when in atari' },
-    { v: '1.6.0', th: 'ปุ่มสลับหมาก ปกติ / โกอิชิซัง', en: 'Classic / Goishi-san stone toggle' },
-    { v: '1.5.0', th: 'เพิ่มมาสคอตนำทาง 碁石さん', en: 'Added 碁石さん teaching mascot' },
-    { v: '1.4.0', th: 'บอทนิวรัล KataGo ระดับดั้น', en: 'Dan-level KataGo neural bot' },
-    { v: '1.2.0', th: 'จบเกมด้วยพาส 2 ครั้ง + นับแต้ม', en: 'Two passes end the game + scoring' },
-    { v: '1.1.0', th: 'เล่นกับบอท + เลือกสี + ปรับความยาก', en: 'Vs bot + colour choice + difficulty' },
-    { v: '1.0.0', th: 'เกมโกะ + โหมดสอนเล่น', en: 'Go game + teaching mode' }
+    { v: '1.18.0', th: 'เพิ่มภาษาญี่ปุ่น', en: 'Japanese language added', ja: '日本語に対応しました' },
+    { v: '1.17.1', th: 'ปรับสีหน้าหมากตามคำแนะนำของผู้วาด (とろろ)', en: 'Stone expressions tuned per the artist\'s (とろろ) review', ja: '作者（とろろ様）のレビューに沿って碁石さんの表情を調整' },
+    { v: '1.17.0', th: 'บทเรียนใหม่ 5 บท: เชื่อม/ตัด · บันได · สแนปแบ็ก · ตาปลอม · การจบเกม (รวม 12 บท)', en: '5 new lessons: connect/cut · ladder · snapback · false eyes · game endings (12 total)', ja: '新レッスン5つ: つながり · シチョウ · ウッテガエシ · 欠け目 · 終わり方（全12課）' },
+    { v: '1.16.4', th: 'เก็บกวาดโค้ด + แก้บั๊กย่อย (พิกัดข้าม I, กันบอทเดินซ้ำ)', en: 'Cleanup + small fixes (Go coords skip I, no double bot moves)', ja: 'コード整理と小さな修正（座標のI飛ばし、ボット二重着手防止）' },
+    { v: '1.16.3', th: 'นิวรัล 19×19 คิดเร็วขึ้น (แรงเท่าเดิม ไม่ค้าง)', en: '19×19 Neural thinks faster (same strength, still no freeze)', ja: '19路ニューラルの思考を高速化（強さそのまま）' },
+    { v: '1.16.2', th: 'นิวรัล 19×19 กลับมาแรงเต็ม 256 visits (คิดนานขึ้น แต่ไม่ค้าง)', en: '19×19 Neural back to full 256 visits (thinks longer, no freeze)', ja: '19路ニューラルをフル強度（256 visits）に戻しました' },
+    { v: '1.16.1', th: 'แก้นิวรัล 19×19 ทำเครื่องค้าง — ลดก้อนงาน GPU ต่อครั้ง', en: 'Fix 19×19 Neural machine freeze — smaller GPU work batches', ja: '19路ニューラルでPCが固まる問題を修正（GPU負荷を分割）' },
+    { v: '1.16.0', th: 'กันเครื่องค้าง: เครื่องที่ไม่ไหวกับเน็ตเต็ม นิวรัลใช้เน็ตเล็กแทนอัตโนมัติ', en: 'Anti-freeze: Neural auto-falls back to the compact net on weak machines', ja: '低スペック機ではニューラルが自動で小型ネットに切替' },
+    { v: '1.15.1', th: 'ย่อรูปหมากโกอิชิซัง — โหลดไว ประหยัดแรมขึ้น', en: 'Smaller Goishi-san art — faster load, less memory', ja: '碁石さん画像を軽量化（高速読込・省メモリ）' },
+    { v: '1.15.0', th: 'เตือนเมื่อเลือกนิวรัล (กินแรม ~1GB · เครื่องเล็กอาจค้าง)', en: 'Warn when picking Neural (~1 GB RAM; low-end devices may freeze)', ja: 'ニューラル選択時に高負荷の警告を表示' },
+    { v: '1.14.0', th: 'ความยากจริงบน 19×19: ยากใช้เน็ตเล็กทุกกระดาน, กลางใช้เน็ตบน 19×19', en: 'Real 19×19 difficulty: Hard uses a compact net everywhere, Medium on 19×19', ja: '19路盤に本物の難易度: つよい/ふつうが小型ネット使用' },
+    { v: '1.13.0', th: 'ลดแรม: คืนหน่วยความจำบอทนิวรัลเมื่อเลิกใช้/พักจอ', en: 'Lower memory: free the neural bot when unused / tab hidden', ja: '省メモリ: 未使用時にニューラルボットを解放' },
+    { v: '1.12.0', th: 'ลื่นขึ้น: หมากไม่กระพริบตอนเลื่อนเมาส์ + ใช้แรมน้อยลง', en: 'Smoother: no stone flicker on hover + lower memory', ja: 'なめらかに: マウス移動で石がちらつかないよう修正' },
+    { v: '1.11.0', th: 'เพิ่มประวัติเวอร์ชันในเว็บ', en: 'In-app version history', ja: 'アプリ内の更新履歴を追加' },
+    { v: '1.10.0', th: 'หน้าหมากตามสถานการณ์ + ไกด์สีชมพู', en: 'Situation-based stone faces + pink guide', ja: '盤面の状況で表情が変化 + ピンクのガイド役' },
+    { v: '1.9.0', th: 'ใช้สีหน้า 碁石さん ครบ 18 แบบ', en: 'All 18 碁石さん expressions used', ja: '碁石さんの全18表情を使用' },
+    { v: '1.8.0', th: 'หมากมีอารมณ์ครบ (กังวล/ตกใจ/ตาย)', en: 'Full stone emotions (worried/scared/dead)', ja: '石の感情がフルセットに（心配/驚き/死亡）' },
+    { v: '1.7.0', th: 'หมากเปลี่ยนสีหน้าเมื่อจะโดนกิน', en: 'Stones react when in atari', ja: 'アタリで石の表情が変わるように' },
+    { v: '1.6.0', th: 'ปุ่มสลับหมาก ปกติ / โกอิชิซัง', en: 'Classic / Goishi-san stone toggle', ja: '石のデザイン切替（ふつう / 碁石さん）' },
+    { v: '1.5.0', th: 'เพิ่มมาสคอตนำทาง 碁石さん', en: 'Added 碁石さん teaching mascot', ja: '案内役の碁石さんを追加' },
+    { v: '1.4.0', th: 'บอทนิวรัล KataGo ระดับดั้น', en: 'Dan-level KataGo neural bot', ja: '有段レベルのKataGoニューラルボット' },
+    { v: '1.2.0', th: 'จบเกมด้วยพาส 2 ครั้ง + นับแต้ม', en: 'Two passes end the game + scoring', ja: '2回連続パスで終局 + 計算' },
+    { v: '1.1.0', th: 'เล่นกับบอท + เลือกสี + ปรับความยาก', en: 'Vs bot + colour choice + difficulty', ja: 'ボット対局 + 石の色選択 + 難易度' },
+    { v: '1.0.0', th: 'เกมโกะ + โหมดสอนเล่น', en: 'Go game + teaching mode', ja: '囲碁 + 入門モード' }
   ];
   // KataGo dan net (b18c384nbt, ~93MB) served same-origin from R2 via functions/models/.
   var NEURAL_MODEL = 'models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz'; // b18 dan (~93MB, R2)
@@ -64,7 +65,8 @@
       neuralLoading: 'กำลังโหลดเอนจินนิวรัล KataGo ระดับดั้น (~90MB) … ครั้งแรกช้า แล้วจะ cache ไว้',
       smallLoading: 'กำลังโหลดเน็ตเล็ก (~4MB) …',
       neuralFail: 'โหลดนิวรัลไม่สำเร็จ ใช้บอทปกติแทน',
-      playAs: 'คุณเล่นเป็น', botPlays: 'บอทเล่น', blackFirst: 'ดำเดินก่อน', takeTurns: 'เดินสลับกัน'
+      playAs: 'คุณเล่นเป็น', botPlays: 'บอทเล่น', blackFirst: 'ดำเดินก่อน', takeTurns: 'เดินสลับกัน',
+      lessonWord: 'บทที่ ', hotseatBody: 'ผลัดกันเดินบนเครื่องเดียว ดำเริ่มก่อน', hintLook: 'ลองดูจุดที่ถูกไฮไลต์'
     },
     en: {
       modePlay: 'Two players', modeBot: 'Vs bot', modeLearn: 'Learn',
@@ -78,7 +80,7 @@
       by: 'by', points: 'pts', komi: 'komi',
       hint: 'Hint', gotIt: 'Got it', prev: 'Prev', next: 'Next',
       lesson: 'Lesson', goalLabel: 'Goal', wellDone: 'Well done',
-      allDone: 'All lessons done! Go play a real game.', theme: 'Theme', langName: 'ไทย',
+      allDone: 'All lessons done! Go play a real game.', theme: 'Theme', langName: '日本語',
       passLabel: 'pass', stoneOnBoard: 'stones on board', stoneStyle: 'Stones', stoneNormal: 'Classic', stoneMascot: 'Goishi-san', verHistory: 'Version history', closeLbl: 'Close',
       resume: 'Resume', scoringHint: 'Tap “dead” groups to remove them, then read the score below',
       mascotHi: "Let's learn!", mascotGood: 'Nice move!', mascotThink: 'Thinking…',
@@ -90,14 +92,42 @@
       neuralLoading: 'Loading dan-level KataGo engine (~90MB)… slow first time, then cached',
       smallLoading: 'Loading the compact net (~4 MB)…',
       neuralFail: 'Neural failed to load; using the regular bot',
-      playAs: 'You play', botPlays: 'Bot plays', blackFirst: 'Black moves first', takeTurns: 'take turns'
+      playAs: 'You play', botPlays: 'Bot plays', blackFirst: 'Black moves first', takeTurns: 'take turns',
+      lessonWord: 'Lesson ', hotseatBody: 'Hot-seat on one device. Black starts.', hintLook: 'Look at the highlighted point'
+    },
+    ja: {
+      modePlay: 'ふたりで対局', modeBot: 'ボットと対局', modeLearn: '入門モード',
+      newGame: '新しい対局', pass: 'パス', undo: '待った', count: '数える',
+      size: '碁盤サイズ', turn: '手番', black: '黒', white: '白',
+      capByBlack: '黒のアゲハマ', capByWhite: '白のアゲハマ',
+      illegalOccupied: 'そこには石があります', illegalKo: 'コウ: すぐには取り返せません',
+      illegalSuicide: '自殺手は打てません', illegalOff: '盤外です',
+      youAre: 'あなたは', botThinks: 'ボットが考えています…', botPassed: 'ボットはパスしました',
+      gameOver: '終局', winnerBlack: '黒の勝ち', winnerWhite: '白の勝ち', tie: '引き分け',
+      by: '+', points: '目', komi: 'コミ',
+      hint: 'ヒント', gotIt: 'わかった', prev: '前へ', next: '次へ',
+      lesson: 'レッスン', goalLabel: '目標', wellDone: 'よくできました',
+      allDone: '全レッスン完了！実戦で打ってみましょう', theme: 'テーマ切替', langName: 'ไทย',
+      passLabel: 'パス', stoneOnBoard: '盤上の石', stoneStyle: '石のデザイン', stoneNormal: 'ふつう', stoneMascot: '碁石さん', verHistory: '更新履歴', closeLbl: '閉じる',
+      resume: '対局に戻る', scoringHint: '死んだ石のグループをタップして取り除き、下の得点を確認',
+      mascotHi: 'いっしょに学ぼう！', mascotGood: 'いい手！', mascotThink: 'ちょっと考え中…',
+      mascotOops: 'おっと、そこには打てないよ', mascotWin: '終局！数えてみよう', mascotPlay: 'あなたの番だよ',
+      difficulty: '難易度', diffEasy: 'やさしい', diffMedium: 'ふつう', diffHard: 'つよい', diffNeural: 'ニューラル',
+      diffNote19: '19路盤: ふつう/つよい は小型ネット使用（初回~4MB）· ニューラル = 最強',
+      neuralWarn: '⚠ ニューラルは高負荷（~93MBダウンロード · メモリ~1GB）— 低スペック機やスマホは固まる恐れがあります',
+      neuralLite: 'この端末ではフルネットは動かせないため（WebGPU+メモリが必要）、ニューラルは小型ネットの全力モードで動きます',
+      neuralLoading: 'KataGo 有段ネット（~90MB）を読み込み中… 初回のみ時間がかかります',
+      smallLoading: '小型ネット（~4MB）を読み込み中…',
+      neuralFail: 'ニューラルの読み込みに失敗。通常ボットで続行します',
+      playAs: 'あなたの石', botPlays: 'ボット', blackFirst: '黒が先手', takeTurns: '交互に打つ',
+      lessonWord: 'レッスン ', hotseatBody: '1台の端末で交互に打ちます。黒が先手。', hintLook: 'ハイライトされた点を見てみよう'
     }
   };
 
   // ---------- state ----------
   var S = {
     // validate persisted values: a corrupted localStorage must not crash or inject
-    lang: localStorage.getItem('baduk.lang') === 'en' ? 'en' : 'th',
+    lang: ['th', 'en', 'ja'].indexOf(localStorage.getItem('baduk.lang')) >= 0 ? localStorage.getItem('baduk.lang') : 'th',
     theme: localStorage.getItem('baduk.theme'),
     mode: 'play',
     size: 9,
@@ -116,7 +146,7 @@
     humanColor: (localStorage.getItem('baduk.humanColor') === '2' ? WHITE : BLACK), // vs bot: your colour
     stoneStyle: (localStorage.getItem('baduk.stoneStyle') === 'mascot' ? 'mascot' : 'normal') // 'normal' circles | 'mascot' 碁石さん faces
   };
-  function t(k) { return T[S.lang][k]; }
+  function t(k) { return T[S.lang][k] != null ? T[S.lang][k] : T.en[k]; } // EN fallback for any missing key
   var botWorker = null;
 
   var $ = function (id) { return document.getElementById(id); };
@@ -323,7 +353,7 @@
     // panel content depends on mode
     if (S.mode === 'learn') {
       var L = LESSONS[S.lessonIdx];
-      $('panelTitle').textContent = (S.lang === 'th' ? 'บทที่ ' : 'Lesson ') + (S.lessonIdx + 1) + '. ' + L.title[S.lang];
+      $('panelTitle').textContent = t('lessonWord') + (S.lessonIdx + 1) + '. ' + L.title[S.lang];
       $('panelBody').textContent = L.body[S.lang];
       $('goalBox').hidden = false;
       $('goalText').textContent = t('goalLabel') + ': ' + L.goal[S.lang];
@@ -336,7 +366,7 @@
       if (S.mode === 'bot') {
         $('panelBody').textContent = t('playAs') + ' ' + colorName(S.humanColor) + ' · ' + t('botPlays') + ' ' + colorName(botColor()) + ' · ' + t('blackFirst');
       } else {
-        $('panelBody').textContent = (S.lang === 'th' ? 'ผลัดกันเดินบนเครื่องเดียว ดำเริ่มก่อน' : 'Hot-seat on one device. Black starts.');
+        $('panelBody').textContent = t('hotseatBody');
       }
       $('goalBox').hidden = true;
       $('lessonNav').hidden = true;
@@ -822,13 +852,16 @@
     $('undoBtn').onclick = undo;
     $('countBtn').onclick = function () { if (!S.busy) enterScoring(false); };
     $('resumeBtn').onclick = exitScoring;
-    $('langBtn').onclick = function () { S.lang = S.lang === 'th' ? 'en' : 'th'; localStorage.setItem('baduk.lang', S.lang); applyLang(); render(); };
+    $('langBtn').onclick = function () { // cycle th -> en -> ja -> th (button shows the next one)
+      S.lang = S.lang === 'th' ? 'en' : S.lang === 'en' ? 'ja' : 'th';
+      localStorage.setItem('baduk.lang', S.lang); applyLang(); render();
+    };
     $('themeBtn').onclick = toggleTheme;
     $('sizeSel').onchange = function (e) { S.size = parseInt(e.target.value, 10); newGame(); };
     $('hintBtn').onclick = function () {
       var L = LESSONS[S.lessonIdx];
       var m = (L.markers || [])[0];
-      if (m) { S.cursor = { x: m[0], y: m[1] }; render(); setStatus(S.lang === 'th' ? 'ลองดูจุดที่ถูกไฮไลต์' : 'Look at the highlighted point'); }
+      if (m) { S.cursor = { x: m[0], y: m[1] }; render(); setStatus(t('hintLook')); }
     };
     $('gotItBtn').onclick = function () {
       var L = LESSONS[S.lessonIdx];
@@ -987,6 +1020,7 @@
     $('nextLesson').textContent = t('next') + ' ›';
     $('langBtn').textContent = t('langName');
     $('themeBtn').setAttribute('aria-label', t('theme'));
+    if (!S.busy) setMascot('idle', S.mode === 'bot' ? t('mascotPlay') : t('mascotHi')); // re-speak in the new language
     if ($('changelog').open) openChangelog(); // refresh the version list in the new language
   }
 
