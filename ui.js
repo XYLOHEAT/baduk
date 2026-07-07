@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.18.0';
+  var VERSION = '1.18.1';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.18.1', th: 'แก้ขอบปุ่มตัวเลือกซ้อนกันดูแปลก + ป้ายญี่ปุ่นไม่ตัดกลางคำ', en: 'Fix odd double-bordered segmented buttons + Japanese label wrapping', ja: '選択ボタンの二重枠を修正 + 日本語ラベルの折返しを解消' },
     { v: '1.18.0', th: 'เพิ่มภาษาญี่ปุ่น', en: 'Japanese language added', ja: '日本語に対応しました' },
     { v: '1.17.1', th: 'ปรับสีหน้าหมากตามคำแนะนำของผู้วาด (とろろ)', en: 'Stone expressions tuned per the artist\'s (とろろ) review', ja: '作者（とろろ様）のレビューに沿って碁石さんの表情を調整' },
     { v: '1.17.0', th: 'บทเรียนใหม่ 5 บท: เชื่อม/ตัด · บันได · สแนปแบ็ก · ตาปลอม · การจบเกม (รวม 12 บท)', en: '5 new lessons: connect/cut · ladder · snapback · false eyes · game endings (12 total)', ja: '新レッスン5つ: つながり · シチョウ · ウッテガエシ · 欠け目 · 終わり方（全12課）' },
@@ -112,10 +113,10 @@
       resume: '対局に戻る', scoringHint: '死んだ石のグループをタップして取り除き、下の得点を確認',
       mascotHi: 'いっしょに学ぼう！', mascotGood: 'いい手！', mascotThink: 'ちょっと考え中…',
       mascotOops: 'おっと、そこには打てないよ', mascotWin: '終局！数えてみよう', mascotPlay: 'あなたの番だよ',
-      difficulty: '難易度', diffEasy: 'やさしい', diffMedium: 'ふつう', diffHard: 'つよい', diffNeural: 'ニューラル',
-      diffNote19: '19路盤: ふつう/つよい は小型ネット使用（初回~4MB）· ニューラル = 最強',
-      neuralWarn: '⚠ ニューラルは高負荷（~93MBダウンロード · メモリ~1GB）— 低スペック機やスマホは固まる恐れがあります',
-      neuralLite: 'この端末ではフルネットは動かせないため（WebGPU+メモリが必要）、ニューラルは小型ネットの全力モードで動きます',
+      difficulty: '難易度', diffEasy: 'やさしい', diffMedium: 'ふつう', diffHard: 'つよい', diffNeural: '最強',
+      diffNote19: '19路盤: ふつう/つよい は小型ネット使用（初回~4MB）· 最強 = ニューラルネット',
+      neuralWarn: '⚠ 最強（ニューラル）は高負荷（~93MBダウンロード · メモリ~1GB）— 低スペック機やスマホは固まる恐れがあります',
+      neuralLite: 'この端末ではフルネットは動かせないため（WebGPU+メモリが必要）、最強モードは小型ネットの全力で動きます',
       neuralLoading: 'KataGo 有段ネット（~90MB）を読み込み中… 初回のみ時間がかかります',
       smallLoading: '小型ネット（~4MB）を読み込み中…',
       neuralFail: 'ニューラルの読み込みに失敗。通常ボットで続行します',
