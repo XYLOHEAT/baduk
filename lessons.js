@@ -130,22 +130,21 @@
       id: 'snapback',
       title: { th: 'สแนปแบ็ก (Snapback)', en: 'Snapback', ja: 'ウッテガエシ' },
       body: {
-        th: 'ขาวเพิ่งจับกินหมากดำหนึ่งเม็ดตรงช่องว่างกลางวง — แต่นั่นคือเหยื่อ! การจับกินทำให้ขาวทั้งวงเหลือลมเดียวคือจุดนั้นเอง วางดำคืนที่จุดเดิม จะจับกินขาวทั้งวง 8 เม็ด ต่างจากกฎโกตรงที่การจับคืนนี้กินมากกว่า 1 เม็ด กระดานไม่ย้อนกลับเป็นแบบเดิม จึงไม่ผิดกฎ',
-        en: 'White just captured one black stone in the middle of the ring — but it was bait! That capture left the whole white ring with a single liberty: that very point. Play back there to take all eight stones. Unlike ko, this recapture takes more than one stone, so the board does not repeat and the rule allows it.',
-        ja: '白は輪の中央で黒1子を取ったばかり — でもそれは捨て石！その取りで白の輪全体の呼吸点がその一点だけになりました。同じ点に打ち返すと白8子をまるごと取れます。コウと違って1子より多く取るので、盤面は繰り返されずルール違反になりません。'
+        th: 'ขาวเพิ่งจับกินหมากดำหนึ่งเม็ดที่จุดเป้าหมาย — แต่นั่นคือเหยื่อ! การจับกินทำให้กลุ่มขาวใหญ่เหลือลมเดียวคือจุดนั้นเอง วางดำคืนที่เดิม จะจับกินขาว 5 เม็ด ต่างจากกฎโกตรงที่การจับคืนนี้กินมากกว่า 1 เม็ด กระดานไม่ย้อนกลับเป็นแบบเดิม จึงไม่ผิดกฎ',
+        en: 'White just captured one black stone on the marked point — but it was bait! That capture left the big white group with a single liberty: that very point. Play back there to take five stones. Unlike ko, this recapture takes more than one stone, so the board does not repeat and the rule allows it.',
+        ja: '白は目印の点で黒1子を取ったばかり — でもそれは捨て石！その取りで白の大きなグループの呼吸点がその一点だけになりました。同じ点に打ち返すと白5子を取れます。コウと違って1子より多く取るので、盤面は繰り返されずルール違反になりません。'
       },
-      goal: { th: 'จับกินวงขาว 8 เม็ดที่จุดเป้าหมาย', en: 'Capture the 8-stone white ring at the mark', ja: '目印の点で白8子を取る' },
+      goal: { th: 'จับกินกลุ่มขาว 5 เม็ดที่จุดเป้าหมาย', en: 'Capture the 5-stone white group at the mark', ja: '目印の点で白5子を取る' },
       size: 9, toMove: B,
-      // artist-reviewed shape (とろろ, l8): a white ring whose only liberty is the point
-      // it just captured on — the definition of a snapback
+      // exact board from the artist's l8 diagram (とろろ): the big white group's only
+      // liberty is the point it just captured on; the two lone whites survive
       stones: [
-        [3, 2, 'W'], [4, 2, 'W'], [5, 2, 'W'], [3, 3, 'W'], [5, 3, 'W'], [3, 4, 'W'], [4, 4, 'W'], [5, 4, 'W'],
-        [3, 1, 'B'], [4, 1, 'B'], [5, 1, 'B'], [2, 2, 'B'], [6, 2, 'B'], [2, 3, 'B'], [6, 3, 'B'],
-        [2, 4, 'B'], [6, 4, 'B'], [3, 5, 'B'], [4, 5, 'B'], [5, 5, 'B']
+        [3, 1, 'W'], [2, 2, 'W'], [4, 2, 'W'], [2, 3, 'W'], [3, 3, 'W'], [2, 4, 'W'], [3, 4, 'W'],
+        [1, 1, 'B'], [2, 1, 'B'], [1, 2, 'B'], [1, 3, 'B'], [4, 3, 'B'], [1, 4, 'B'], [4, 4, 'B'], [2, 5, 'B'], [3, 5, 'B']
       ],
-      markers: [[4, 3, 'target']],
-      check: function (g) { return g.captures[B] >= 8; },
-      success: { th: 'สแนปแบ็ก! เสีย 1 ได้ 8 — การสละหมากเล็กเพื่อกินใหญ่คือหัวใจของเทคนิคนี้', en: 'Snapback! One stone traded for eight — a small sacrifice for a big capture.', ja: 'ウッテガエシ！1子の犠牲で8子ゲット — 小を捨てて大を取る手筋です。' }
+      markers: [[3, 2, 'target']],
+      check: function (g) { return g.captures[B] >= 5; },
+      success: { th: 'สแนปแบ็ก! เสีย 1 ได้ 5 — การสละหมากเล็กเพื่อกินใหญ่คือหัวใจของเทคนิคนี้', en: 'Snapback! One stone traded for five — a small sacrifice for a big capture.', ja: 'ウッテガエシ！1子の犠牲で5子ゲット — 小を捨てて大を取る手筋です。' }
     },
     {
       id: 'eyes',

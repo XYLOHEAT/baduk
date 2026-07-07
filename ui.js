@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.18.2';
+  var VERSION = '1.18.3';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.18.3', th: 'บทสแนปแบ็กใช้ผังตามแผนภาพของ とろろ เป๊ะ', en: 'Snapback lesson now uses とろろ\'s exact diagram', ja: 'ウッテガエシのレッスンをとろろ様の図の通りの配石に' },
     { v: '1.18.2', th: 'แก้ผังบทเรียน 6/8/9/10 ให้ถูกตามหลักโกะ (ขอบคุณ とろろ) + รูปหน้า 2 แขนสั้น', en: 'Lessons 6/8/9/10 boards corrected per Go theory (thanks とろろ) + short-arm face 2', ja: 'レッスン6/8/9/10の配石を修正（とろろ様に感謝）+ 表情2を差し替え' },
     { v: '1.18.1', th: 'แก้ขอบปุ่มตัวเลือกซ้อนกันดูแปลก + ป้ายญี่ปุ่นไม่ตัดกลางคำ', en: 'Fix odd double-bordered segmented buttons + Japanese label wrapping', ja: '選択ボタンの二重枠を修正 + 日本語ラベルの折返しを解消' },
     { v: '1.18.0', th: 'เพิ่มภาษาญี่ปุ่น', en: 'Japanese language added', ja: '日本語に対応しました' },

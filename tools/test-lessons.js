@@ -20,7 +20,7 @@ var SOLUTIONS = {
   ladder: [[4, 6]],
   noselfatari: [[0, 2]],
   ko: [[4, 4]],
-  snapback: [[4, 3]]
+  snapback: [[3, 2]]
 };
 
 function build(L) {
@@ -86,13 +86,17 @@ G.neighbors(nsG, G.idx(nsG, nsT[0], nsT[1])).forEach(function (nb) {
   assert(nsG.board[nb] !== 0, 'noselfatari: target has an empty neighbour — not a zero-liberty point');
 });
 
-// 'snapback' promises the ring's ONLY liberty is the marked point (so the story
-// "white just captured there and is left with one liberty" holds)
+// 'snapback' (artist's exact l8 board) promises: the big white group's ONLY liberty is
+// the marked point, and the two lone whites survive the recapture
 var sbL = lesson('snapback'), sbG = build(sbL), sbT = sbL.markers[0];
-var ring = G.group(sbG, G.idx(sbG, 3, 2));
-assert(ring.stones.length === 8, 'snapback: white ring is not 8 connected stones');
-assert(ring.liberties.length === 1 && ring.liberties[0] === G.idx(sbG, sbT[0], sbT[1]),
-  'snapback: ring liberty is not exactly the marked point');
+var big = G.group(sbG, G.idx(sbG, 2, 2));
+assert(big.stones.length === 5, 'snapback: big white group is not 5 connected stones');
+assert(big.liberties.length === 1 && big.liberties[0] === G.idx(sbG, sbT[0], sbT[1]),
+  'snapback: big group liberty is not exactly the marked point');
+var sbR = G.play(sbG, sbT[0], sbT[1], 1);
+assert(sbR.ok && sbR.captured.length === 5, 'snapback: recapture did not take exactly 5');
+assert(sbG.board[G.idx(sbG, 3, 1)] === 2 && sbG.board[G.idx(sbG, 4, 2)] === 2,
+  'snapback: the lone white stones should survive');
 
 // 'falseeye' promises the false-eye point is orthogonally all-black with white diagonals
 var feL = lesson('falseeye'), feG = build(feL), feT = feL.markers.filter(function (m) { return m[2] === 'target'; })[0];
