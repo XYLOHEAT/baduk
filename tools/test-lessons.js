@@ -20,7 +20,7 @@ var SOLUTIONS = {
   ladder: [[4, 6]],
   noselfatari: [[0, 2]],
   ko: [[4, 4]],
-  snapback: [[4, 4]]
+  snapback: [[4, 3]]
 };
 
 function build(L) {
@@ -67,5 +67,39 @@ var endL = LESSONS.filter(function (L) { return L.id === 'ending'; })[0];
 var eg = build(endL);
 G.pass(eg);
 assert(G.pass(eg).ended, 'ending: two passes did not end the game');
+
+function lesson(id) { return LESSONS.filter(function (L) { return L.id === id; })[0]; }
+
+// 'eyes' promises white inside either eye is refused as suicide (artist review: the old
+// two-ADJACENT-empty-points shape was one big eye space — a dead shape, and the play
+// inside it was legal, breaking the demo)
+var eyesG = build(lesson('eyes'));
+lesson('eyes').markers.forEach(function (m) {
+  var r = G.play(eyesG, m[0], m[1], 2);
+  assert(!r.ok && r.reason === 'suicide', 'eyes: white at ' + m + ' was not refused as suicide');
+});
+
+// 'noselfatari' promises the target is a zero-liberty point EXCEPT for the capture:
+// every empty neighbour of the target must be... none — all its neighbours are stones
+var nsL = lesson('noselfatari'), nsG = build(nsL), nsT = nsL.markers[0];
+G.neighbors(nsG, G.idx(nsG, nsT[0], nsT[1])).forEach(function (nb) {
+  assert(nsG.board[nb] !== 0, 'noselfatari: target has an empty neighbour — not a zero-liberty point');
+});
+
+// 'snapback' promises the ring's ONLY liberty is the marked point (so the story
+// "white just captured there and is left with one liberty" holds)
+var sbL = lesson('snapback'), sbG = build(sbL), sbT = sbL.markers[0];
+var ring = G.group(sbG, G.idx(sbG, 3, 2));
+assert(ring.stones.length === 8, 'snapback: white ring is not 8 connected stones');
+assert(ring.liberties.length === 1 && ring.liberties[0] === G.idx(sbG, sbT[0], sbT[1]),
+  'snapback: ring liberty is not exactly the marked point');
+
+// 'falseeye' promises the false-eye point is orthogonally all-black with white diagonals
+var feL = lesson('falseeye'), feG = build(feL), feT = feL.markers.filter(function (m) { return m[2] === 'target'; })[0];
+G.neighbors(feG, G.idx(feG, feT[0], feT[1])).forEach(function (nb) {
+  assert(feG.board[nb] === 1, 'falseeye: false-eye point has a non-black orthogonal neighbour');
+});
+assert(feG.board[G.idx(feG, 3, 1)] === 2 && feG.board[G.idx(feG, 3, 3)] === 2,
+  'falseeye: the white diagonals are missing');
 
 console.log('test-lessons PASS: ' + LESSONS.length + ' lessons — prefills legal, solutions complete, TH/EN/JA strings present');

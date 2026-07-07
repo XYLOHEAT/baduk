@@ -100,8 +100,9 @@
       },
       goal: { th: 'จับกินกลุ่มขาวที่มุม', en: 'Capture the white corner group', ja: '隅の白2子を取る' },
       size: 9, toMove: B,
-      // white corner pair with one liberty left at (0,2): playing there is "suicide that captures" = legal
-      stones: [[0, 0, 'W'], [0, 1, 'W'], [1, 0, 'B'], [1, 1, 'B']],
+      // artist-reviewed shape (とろろ, l6_2): the marked point really has zero liberties —
+      // white presses it from below/right too — so ONLY the capture makes it legal
+      stones: [[0, 0, 'W'], [0, 1, 'W'], [1, 2, 'W'], [0, 3, 'W'], [1, 0, 'B'], [1, 1, 'B']],
       markers: [[0, 2, 'target']],
       check: function (g) { return g.captures[B] >= 2; },
       success: { th: 'ดี! กลุ่มขาวสองเม็ดถูกจับกิน — จุดล้อมที่จับกินได้ไม่ใช่การฆ่าตัวตาย', en: 'Good. Both white stones captured — a surrounded point that captures is not suicide.', ja: 'よし！相手を取れる点への着手は自殺手ではありません。' }
@@ -129,20 +130,22 @@
       id: 'snapback',
       title: { th: 'สแนปแบ็ก (Snapback)', en: 'Snapback', ja: 'ウッテガエシ' },
       body: {
-        th: 'ขาวเพิ่งจับกินหมากดำหนึ่งเม็ดตรงช่องว่างกลางกลุ่ม — แต่นั่นคือกับดัก! วางดำคืนที่จุดเดิม จะจับกินขาวทั้งกลุ่ม 5 เม็ด ต่างจากกฎโกตรงที่การจับคืนนี้กินมากกว่า 1 เม็ด กระดานไม่ย้อนกลับเป็นแบบเดิม จึงไม่ผิดกฎ',
-        en: 'White just captured one black stone in the gap — but it was bait! Play back on that very point to capture all five white stones. Unlike ko, this recapture takes more than one stone, so the board does not repeat and the rule allows it.',
-        ja: '白はグループ中央の黒1子を取ったばかり — でもそれは罠！同じ点に打ち返すと白5子をまるごと取れます。コウと違って1子より多く取るので、盤面は繰り返されずルール違反になりません。'
+        th: 'ขาวเพิ่งจับกินหมากดำหนึ่งเม็ดตรงช่องว่างกลางวง — แต่นั่นคือเหยื่อ! การจับกินทำให้ขาวทั้งวงเหลือลมเดียวคือจุดนั้นเอง วางดำคืนที่จุดเดิม จะจับกินขาวทั้งวง 8 เม็ด ต่างจากกฎโกตรงที่การจับคืนนี้กินมากกว่า 1 เม็ด กระดานไม่ย้อนกลับเป็นแบบเดิม จึงไม่ผิดกฎ',
+        en: 'White just captured one black stone in the middle of the ring — but it was bait! That capture left the whole white ring with a single liberty: that very point. Play back there to take all eight stones. Unlike ko, this recapture takes more than one stone, so the board does not repeat and the rule allows it.',
+        ja: '白は輪の中央で黒1子を取ったばかり — でもそれは捨て石！その取りで白の輪全体の呼吸点がその一点だけになりました。同じ点に打ち返すと白8子をまるごと取れます。コウと違って1子より多く取るので、盤面は繰り返されずルール違反になりません。'
       },
-      goal: { th: 'จับกินกลุ่มขาว 5 เม็ดที่จุดเป้าหมาย', en: 'Capture the 5-stone white group at the mark', ja: '目印の点で白5子を取る' },
+      goal: { th: 'จับกินวงขาว 8 เม็ดที่จุดเป้าหมาย', en: 'Capture the 8-stone white ring at the mark', ja: '目印の点で白8子を取る' },
       size: 9, toMove: B,
+      // artist-reviewed shape (とろろ, l8): a white ring whose only liberty is the point
+      // it just captured on — the definition of a snapback
       stones: [
-        [3, 3, 'W'], [4, 3, 'W'], [5, 3, 'W'], [3, 4, 'W'], [5, 4, 'W'],
-        [2, 3, 'B'], [3, 2, 'B'], [4, 2, 'B'], [5, 2, 'B'], [6, 3, 'B'],
+        [3, 2, 'W'], [4, 2, 'W'], [5, 2, 'W'], [3, 3, 'W'], [5, 3, 'W'], [3, 4, 'W'], [4, 4, 'W'], [5, 4, 'W'],
+        [3, 1, 'B'], [4, 1, 'B'], [5, 1, 'B'], [2, 2, 'B'], [6, 2, 'B'], [2, 3, 'B'], [6, 3, 'B'],
         [2, 4, 'B'], [6, 4, 'B'], [3, 5, 'B'], [4, 5, 'B'], [5, 5, 'B']
       ],
-      markers: [[4, 4, 'target']],
-      check: function (g) { return g.captures[B] >= 5; },
-      success: { th: 'สแนปแบ็ก! เสีย 1 ได้ 5 — การสละหมากเล็กเพื่อกินใหญ่คือหัวใจของเทคนิคนี้', en: 'Snapback! One stone traded for five — a small sacrifice for a big capture.', ja: 'ウッテガエシ！1子の犠牲で5子ゲット — 小を捨てて大を取る手筋です。' }
+      markers: [[4, 3, 'target']],
+      check: function (g) { return g.captures[B] >= 8; },
+      success: { th: 'สแนปแบ็ก! เสีย 1 ได้ 8 — การสละหมากเล็กเพื่อกินใหญ่คือหัวใจของเทคนิคนี้', en: 'Snapback! One stone traded for eight — a small sacrifice for a big capture.', ja: 'ウッテガエシ！1子の犠牲で8子ゲット — 小を捨てて大を取る手筋です。' }
     },
     {
       id: 'eyes',
@@ -154,12 +157,18 @@
       },
       goal: { th: 'ลองวางขาวในตาทั้งสอง (จะถูกปฏิเสธ) แล้วกด “เข้าใจแล้ว”', en: 'Try white in the eyes (refused), then press “Got it”.', ja: '両方の眼に白を打ってみて（拒否されます）、「わかった」を押す' },
       size: 9, toMove: W,
+      // artist-reviewed shape (とろろ, l9_2): the old layout had two ADJACENT empty points —
+      // one big eye space, actually a dead shape. Real life needs two SEPARATED eyes;
+      // white fully surrounds the group to show it still cannot be captured.
       stones: [
-        [1, 1, 'B'], [2, 1, 'B'], [3, 1, 'B'], [4, 1, 'B'],
-        [1, 2, 'B'], [4, 2, 'B'], [1, 3, 'B'], [2, 3, 'B'], [3, 3, 'B'], [4, 3, 'B'],
-        // eyes at (2,2) and (3,2)
+        [2, 3, 'B'], [3, 3, 'B'], [4, 3, 'B'], [5, 3, 'B'], [6, 3, 'B'],
+        [2, 4, 'B'], [4, 4, 'B'], [6, 4, 'B'],
+        [2, 5, 'B'], [3, 5, 'B'], [4, 5, 'B'], [5, 5, 'B'], [6, 5, 'B'],
+        [2, 2, 'W'], [3, 2, 'W'], [4, 2, 'W'], [5, 2, 'W'], [6, 2, 'W'],
+        [1, 3, 'W'], [7, 3, 'W'], [1, 4, 'W'], [7, 4, 'W'], [1, 5, 'W'], [7, 5, 'W'],
+        [2, 6, 'W'], [3, 6, 'W'], [4, 6, 'W'], [5, 6, 'W'], [6, 6, 'W']
       ],
-      markers: [[2, 2, 'eye'], [3, 2, 'eye']],
+      markers: [[3, 4, 'eye'], [5, 4, 'eye']],
       manualDone: true, // completed by the "Got it" button
       check: function () { return false; },
       success: { th: 'ถูกต้อง สองตาคือหัวใจของการมีชีวิตในโกะ', en: 'Right. Two eyes is the heart of life in Go.', ja: 'その通り。二眼こそ碁における生きの心臓部です。' }
@@ -174,13 +183,18 @@
       },
       goal: { th: 'สังเกตความต่างของสองตา แล้วกด “เข้าใจแล้ว”', en: 'Compare the two eyes, then press "Got it".', ja: '2つの眼の違いを見比べて「わかった」を押す' },
       size: 9, toMove: W,
+      // artist-reviewed shape (とろろ, l10): the left group's eye is real (black on every
+      // side and diagonal); the right cluster only meets the rest THROUGH the false-eye
+      // point, whose diagonals (3,1)/(3,3) are white.
       stones: [
-        [1, 1, 'B'], [2, 1, 'B'], [3, 1, 'B'], [5, 1, 'B'], [6, 1, 'B'],
-        [1, 2, 'B'], [3, 2, 'B'], [4, 2, 'B'], [6, 2, 'B'],
-        [1, 3, 'B'], [2, 3, 'B'], [3, 3, 'B'], [5, 3, 'B'], [6, 3, 'B'],
-        [4, 1, 'W'], [4, 3, 'W']
+        [0, 1, 'B'], [1, 1, 'B'], [2, 1, 'B'], [4, 1, 'B'], [5, 1, 'B'],
+        [0, 2, 'B'], [2, 2, 'B'], [3, 2, 'B'], [5, 2, 'B'],
+        [0, 3, 'B'], [1, 3, 'B'], [2, 3, 'B'], [4, 3, 'B'], [5, 3, 'B'],
+        [3, 0, 'W'], [4, 0, 'W'], [5, 0, 'W'], [6, 0, 'W'],
+        [3, 1, 'W'], [6, 1, 'W'], [3, 3, 'W'], [6, 3, 'W'],
+        [3, 4, 'W'], [4, 4, 'W'], [5, 4, 'W'], [6, 4, 'W']
       ],
-      markers: [[2, 2, 'eye'], [5, 2, 'target']],
+      markers: [[1, 2, 'eye'], [4, 2, 'target']],
       manualDone: true,
       check: function () { return false; },
       success: { th: 'ใช่เลย เวลานับตาให้มองมุมทแยงด้วย ไม่ใช่แค่ช่องว่าง', en: 'Exactly — judge eyes by their diagonals, not just the empty point.', ja: 'その通り — 眼は空点だけでなく斜めも見て判断しましょう。' }
