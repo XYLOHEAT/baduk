@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.18.4';
+  var VERSION = '1.18.5';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.18.5', th: 'บทบันไดใช้ผัง l5_3 ของ とろろ เป๊ะ + รูปหน้า 1 แขนสั้น + แก้ CSP', en: 'Ladder uses とろろ\'s exact l5_3 board + short-arm face 1 + CSP fixes', ja: 'シチョウをとろろ様のl5_3の配石に + 表情1を差し替え + CSP修正' },
     { v: '1.18.4', th: 'บทบันไดเห็นขั้นบันไดจนชนขอบจริง + แก้คำอธิบายบทสแนปแบ็ก (ญี่ปุ่น)', en: 'Ladder lesson now shows the full staircase to the edge + clearer snapback wording', ja: 'シチョウのレッスンを端まで続く階段の形に + ウッテガエシの説明文を修正' },
     { v: '1.18.3', th: 'บทสแนปแบ็กใช้ผังตามแผนภาพของ とろろ เป๊ะ', en: 'Snapback lesson now uses とろろ\'s exact diagram', ja: 'ウッテガエシのレッスンをとろろ様の図の通りの配石に' },
     { v: '1.18.2', th: 'แก้ผังบทเรียน 6/8/9/10 ให้ถูกตามหลักโกะ (ขอบคุณ とろろ) + รูปหน้า 2 แขนสั้น', en: 'Lessons 6/8/9/10 boards corrected per Go theory (thanks とろろ) + short-arm face 2', ja: 'レッスン6/8/9/10の配石を修正（とろろ様に感謝）+ 表情2を差し替え' },

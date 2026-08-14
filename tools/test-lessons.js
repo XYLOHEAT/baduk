@@ -17,7 +17,7 @@ var SOLUTIONS = {
   liberty: [[4, 3], [3, 4], [5, 4]],
   capture: [[4, 5]],
   connect: [[4, 4]],
-  ladder: [[8, 8]],
+  ladder: [[7, 8]],
   noselfatari: [[0, 2]],
   ko: [[4, 4]],
   snapback: [[3, 2]]
@@ -102,7 +102,7 @@ assert(sbG.board[G.idx(sbG, 3, 1)] === 2 && sbG.board[G.idx(sbG, 4, 2)] === 2,
 // is the marked point (artist review: the shape must read as a ladder, not a blob)
 var ldL = lesson('ladder'), ldG = build(ldL), ldT = ldL.markers[0];
 var chain = G.group(ldG, G.idx(ldG, 3, 3));
-assert(chain.stones.length === 10, 'ladder: white staircase is not 10 connected stones');
+assert(chain.stones.length === 9, 'ladder: white staircase is not 9 connected stones');
 assert(chain.liberties.length === 1 && chain.liberties[0] === G.idx(ldG, ldT[0], ldT[1]),
   'ladder: the only liberty is not the marked point');
 var onEdge = chain.stones.some(function (i) {

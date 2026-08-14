@@ -80,18 +80,18 @@
         en: 'A classic capture: keep giving atari from alternating sides so the fleeing group always has exactly one liberty. The stones run diagonally like a staircase until they hit the edge — where there is nowhere left to run. This white staircase has been chased into the corner; fill its last liberty at the mark to take the whole chain.',
         ja: '代表的な取り方: 左右交互にアタリを続け、逃げる石の呼吸点を常に1つにします。石は階段状に斜めに走り、盤の端に着くともう逃げ場がありません。この白は隅まで追い詰められています — 目印の点に打って最後の呼吸点を詰め、まとめて取りましょう。'
       },
-      goal: { th: 'จับกินขั้นบันไดขาวทั้ง 10 เม็ด', en: 'Capture the whole 10-stone white staircase', ja: '白10子の階段をまとめて取る' },
+      goal: { th: 'จับกินขั้นบันไดขาวทั้ง 9 เม็ด', en: 'Capture the whole 9-stone white staircase', ja: '白9子の階段をまとめて取る' },
       size: 9, toMove: B,
-      // artist-reviewed (とろろ, l8_3): a full ladder staircase chased to the board edge, so the
-      // zigzag shape and the "no escape at the edge" point are both visible at a glance
+      // transcribed pixel-for-pixel from the artist's l5_3 diagram (とろろ): a ladder chased
+      // to the bottom edge, so the zigzag and the "no escape at the edge" point both show
       stones: [
         [3, 3, 'W'], [3, 4, 'W'], [4, 4, 'W'], [4, 5, 'W'], [5, 5, 'W'],
-        [5, 6, 'W'], [6, 6, 'W'], [6, 7, 'W'], [7, 7, 'W'], [7, 8, 'W'],
+        [5, 6, 'W'], [6, 6, 'W'], [6, 7, 'W'], [6, 8, 'W'],
         [3, 2, 'B'], [2, 3, 'B'], [4, 3, 'B'], [2, 4, 'B'], [5, 4, 'B'], [3, 5, 'B'],
-        [6, 5, 'B'], [4, 6, 'B'], [7, 6, 'B'], [5, 7, 'B'], [8, 7, 'B'], [6, 8, 'B']
+        [6, 5, 'B'], [4, 6, 'B'], [7, 6, 'B'], [5, 7, 'B'], [7, 7, 'B'], [5, 8, 'B']
       ],
-      markers: [[8, 8, 'target']],
-      check: function (g) { return g.captures[B] >= 10; },
+      markers: [[7, 8, 'target']],
+      check: function (g) { return g.captures[B] >= 9; },
       success: { th: 'จับกินยกแถบ! บันไดใช้ได้เพราะปลายทางไม่มีหมากฝ่ายหนีคอยช่วย — ถ้ามี ต้องไม่ไล่', en: 'The whole chain falls! A ladder only works when no friendly stone waits at the far end — always check before you chase.', ja: '一網打尽！シチョウは、逃げる側の味方の石が先にない時だけ成立します — 追う前に必ず確認しましょう。' }
     },
     {

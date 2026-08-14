@@ -3,10 +3,13 @@
 # WASM fallback for the Neural tier. All app resources are same-origin, so CORP
 # same-origin keeps every asset loadable under COEP. (GitHub Pages ignores this file;
 # there WebGPU still works, WASM falls back to single-thread.)
+# frame-ancestors is IGNORED in a <meta> CSP, so the anti-framing rule has to be a
+# real header (the rest of the document CSP stays in the meta tag).
 /*
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Resource-Policy: same-origin
+  Content-Security-Policy: frame-ancestors 'none'
 
 # Workers are NOT governed by the document's <meta> CSP — their CSP comes from the
 # HTTP header on the worker script response. Set connect-src 'self' here so the

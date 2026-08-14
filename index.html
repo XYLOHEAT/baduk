@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
   <meta name="color-scheme" content="light dark">
   <meta name="description" content="เรียนและเล่นโกะ (หมากล้อม / 围棋 / Go) ในเบราว์เซอร์ พร้อมโหมดสอนเล่นทีละขั้น">
   <title>围棋 · Go · หมากล้อม — เรียนและเล่น</title>
-  <link rel="stylesheet" href="styles.css?v=1.18.4">
+  <link rel="stylesheet" href="styles.css?v=1.18.5">
 </head>
 <body>
   <div class="wrap">
@@ -77,7 +77,7 @@
           <span id="lessonProgress" class="progress">1 / 12</span>
           <button id="nextLesson" type="button">Next ›</button>
         </div>
-        <div class="actions" style="margin-top:8px">
+        <div class="actions actions-tight">
           <button id="hintBtn" class="btn" type="button" hidden>Hint</button>
           <button id="gotItBtn" class="btn primary" type="button" hidden>Got it</button>
         </div>
@@ -157,8 +157,8 @@
   </dialog>
 
   <!-- ?v= cache-busts on each release; bump together with VERSION in ui.js / worker.js -->
-  <script src="engine.js?v=1.18.4"></script>
-  <script src="lessons.js?v=1.18.4"></script>
-  <script src="ui.js?v=1.18.4"></script>
+  <script src="engine.js?v=1.18.5"></script>
+  <script src="lessons.js?v=1.18.5"></script>
+  <script src="ui.js?v=1.18.5"></script>
 </body>
 </html>
