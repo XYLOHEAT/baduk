@@ -17,7 +17,7 @@ var SOLUTIONS = {
   liberty: [[4, 3], [3, 4], [5, 4]],
   capture: [[4, 5]],
   connect: [[4, 4]],
-  ladder: [[4, 6]],
+  ladder: [[8, 8]],
   noselfatari: [[0, 2]],
   ko: [[4, 4]],
   snapback: [[3, 2]]
@@ -97,6 +97,19 @@ var sbR = G.play(sbG, sbT[0], sbT[1], 1);
 assert(sbR.ok && sbR.captured.length === 5, 'snapback: recapture did not take exactly 5');
 assert(sbG.board[G.idx(sbG, 3, 1)] === 2 && sbG.board[G.idx(sbG, 4, 2)] === 2,
   'snapback: the lone white stones should survive');
+
+// 'ladder' promises a single white staircase chased to the board EDGE whose only liberty
+// is the marked point (artist review: the shape must read as a ladder, not a blob)
+var ldL = lesson('ladder'), ldG = build(ldL), ldT = ldL.markers[0];
+var chain = G.group(ldG, G.idx(ldG, 3, 3));
+assert(chain.stones.length === 10, 'ladder: white staircase is not 10 connected stones');
+assert(chain.liberties.length === 1 && chain.liberties[0] === G.idx(ldG, ldT[0], ldT[1]),
+  'ladder: the only liberty is not the marked point');
+var onEdge = chain.stones.some(function (i) {
+  var x = i % ldG.size, y = (i - x) / ldG.size;
+  return x === 0 || y === 0 || x === ldG.size - 1 || y === ldG.size - 1;
+});
+assert(onEdge, 'ladder: the chase does not reach the board edge');
 
 // 'falseeye' promises the false-eye point is orthogonally all-black with white diagonals
 var feL = lesson('falseeye'), feG = build(feL), feT = feL.markers.filter(function (m) { return m[2] === 'target'; })[0];

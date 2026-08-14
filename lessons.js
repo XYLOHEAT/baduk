@@ -76,19 +76,23 @@
       id: 'ladder',
       title: { th: 'บันได (Ladder)', en: 'The ladder', ja: 'シチョウ' },
       body: {
-        th: 'เทคนิคจับกินคลาสสิก: ไล่อาตาริซ้ำๆ ให้กลุ่มที่หนีเหลือลมเดียวตลอดทาง เป็นขั้นบันไดจนชนขอบ — กลุ่มขาวนี้ถูกไล่มาจนสุดทางแล้ว ปิดลมสุดท้ายเพื่อจับกินทั้งแถบ',
-        en: 'A classic capture: chase with repeated atari so the fleeing group always has one liberty, zigzagging toward the edge. This white group has been laddered to the end — fill the last liberty and take the whole chain.',
-        ja: '代表的な取り方: アタリを続けて、逃げる石の呼吸点を常に1つにしたまま階段状に追い込みます。この白はもう逃げ場がありません — 最後の呼吸点を詰めて全部取りましょう。'
+        th: 'เทคนิคจับกินคลาสสิก: ไล่อาตาริสลับซ้าย-ขวาซ้ำๆ ให้ฝ่ายหนีเหลือลมเดียวทุกครั้ง หมากจึงวิ่งเป็นขั้นบันไดทแยงจนชนขอบกระดาน — พอชนขอบก็หมดทางหนี ดูขั้นบันไดขาวที่ถูกไล่มาจนสุดมุม แล้วปิดลมสุดท้ายที่จุดเป้าหมายเพื่อจับกินทั้งแถบ',
+        en: 'A classic capture: keep giving atari from alternating sides so the fleeing group always has exactly one liberty. The stones run diagonally like a staircase until they hit the edge — where there is nowhere left to run. This white staircase has been chased into the corner; fill its last liberty at the mark to take the whole chain.',
+        ja: '代表的な取り方: 左右交互にアタリを続け、逃げる石の呼吸点を常に1つにします。石は階段状に斜めに走り、盤の端に着くともう逃げ場がありません。この白は隅まで追い詰められています — 目印の点に打って最後の呼吸点を詰め、まとめて取りましょう。'
       },
-      goal: { th: 'จับกินกลุ่มขาวทั้ง 4 เม็ด', en: 'Capture all 4 white stones', ja: '白4子をすべて取る' },
+      goal: { th: 'จับกินขั้นบันไดขาวทั้ง 10 เม็ด', en: 'Capture the whole 10-stone white staircase', ja: '白10子の階段をまとめて取る' },
       size: 9, toMove: B,
+      // artist-reviewed (とろろ, l8_3): a full ladder staircase chased to the board edge, so the
+      // zigzag shape and the "no escape at the edge" point are both visible at a glance
       stones: [
-        [3, 3, 'W'], [3, 4, 'W'], [4, 4, 'W'], [4, 5, 'W'],
-        [2, 3, 'B'], [3, 2, 'B'], [2, 4, 'B'], [4, 3, 'B'], [3, 5, 'B'], [5, 4, 'B'], [5, 5, 'B']
+        [3, 3, 'W'], [3, 4, 'W'], [4, 4, 'W'], [4, 5, 'W'], [5, 5, 'W'],
+        [5, 6, 'W'], [6, 6, 'W'], [6, 7, 'W'], [7, 7, 'W'], [7, 8, 'W'],
+        [3, 2, 'B'], [2, 3, 'B'], [4, 3, 'B'], [2, 4, 'B'], [5, 4, 'B'], [3, 5, 'B'],
+        [6, 5, 'B'], [4, 6, 'B'], [7, 6, 'B'], [5, 7, 'B'], [8, 7, 'B'], [6, 8, 'B']
       ],
-      markers: [[4, 6, 'target']],
-      check: function (g) { return g.captures[B] >= 4; },
-      success: { th: 'จับกินยกแถบ! ก่อนหนีบันได ให้เช็คก่อนว่าปลายทางมีตัวช่วยไหม', en: 'The whole chain is captured! Before running a ladder, check whether a helper stone waits at the end.', ja: '一網打尽！シチョウで追う（逃げる）前に、先の方に味方の石がないか確認しましょう。' }
+      markers: [[8, 8, 'target']],
+      check: function (g) { return g.captures[B] >= 10; },
+      success: { th: 'จับกินยกแถบ! บันไดใช้ได้เพราะปลายทางไม่มีหมากฝ่ายหนีคอยช่วย — ถ้ามี ต้องไม่ไล่', en: 'The whole chain falls! A ladder only works when no friendly stone waits at the far end — always check before you chase.', ja: '一網打尽！シチョウは、逃げる側の味方の石が先にない時だけ成立します — 追う前に必ず確認しましょう。' }
     },
     {
       id: 'noselfatari',
@@ -130,9 +134,9 @@
       id: 'snapback',
       title: { th: 'สแนปแบ็ก (Snapback)', en: 'Snapback', ja: 'ウッテガエシ' },
       body: {
-        th: 'ขาวเพิ่งจับกินหมากดำหนึ่งเม็ดที่จุดเป้าหมาย — แต่นั่นคือเหยื่อ! การจับกินทำให้กลุ่มขาวใหญ่เหลือลมเดียวคือจุดนั้นเอง วางดำคืนที่เดิม จะจับกินขาว 5 เม็ด ต่างจากกฎโกตรงที่การจับคืนนี้กินมากกว่า 1 เม็ด กระดานไม่ย้อนกลับเป็นแบบเดิม จึงไม่ผิดกฎ',
-        en: 'White just captured one black stone on the marked point — but it was bait! That capture left the big white group with a single liberty: that very point. Play back there to take five stones. Unlike ko, this recapture takes more than one stone, so the board does not repeat and the rule allows it.',
-        ja: '白は目印の点で黒1子を取ったばかり — でもそれは捨て石！その取りで白の大きなグループの呼吸点がその一点だけになりました。同じ点に打ち返すと白5子を取れます。コウと違って1子より多く取るので、盤面は繰り返されずルール違反になりません。'
+        th: 'หมากดำที่เคยอยู่ตรงจุดเป้าหมาย เพิ่งถูกขาวจับกินไป — แต่นั่นคือเหยื่อ! การจับกินทำให้กลุ่มขาวใหญ่เหลือลมเดียวคือจุดนั้นเอง วางดำคืนที่เดิม จะจับกินขาว 5 เม็ด ต่างจากกฎโกตรงที่การจับคืนนี้กินมากกว่า 1 เม็ด กระดานไม่ย้อนกลับเป็นแบบเดิม จึงไม่ผิดกฎ',
+        en: 'The black stone that stood on the marked point was just captured by white — but it was bait! That capture left the big white group with a single liberty: that very point. Play back there to take five stones. Unlike ko, this recapture takes more than one stone, so the board does not repeat and the rule allows it.',
+        ja: '白は目印の点の黒1子を取ったばかり — でもそれは捨て石！その取りで白の大きなグループの呼吸点がその一点だけになりました。同じ点に打ち返すと白5子を取れます。コウと違って1子より多く取るので、盤面は繰り返されずルール違反になりません。'
       },
       goal: { th: 'จับกินกลุ่มขาว 5 เม็ดที่จุดเป้าหมาย', en: 'Capture the 5-stone white group at the mark', ja: '目印の点で白5子を取る' },
       size: 9, toMove: B,

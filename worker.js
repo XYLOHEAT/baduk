@@ -7,7 +7,7 @@
  * run KataGo nets in neural-worker.js — see kataModel() in ui.js.
  */
 /* global GoEngine, importScripts, postMessage, onmessage */
-importScripts('engine.js?v=1.18.3'); // keep in sync with VERSION (cache-bust)
+importScripts('engine.js?v=1.18.4'); // keep in sync with VERSION (cache-bust)
 var E = GoEngine, EMPTY = E.EMPTY;
 
 function isEye(g, i, color) {
