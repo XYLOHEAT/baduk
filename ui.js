@@ -7,9 +7,11 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.19.2';
+  var VERSION = '1.19.3';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.19.3', th: 'เครดิตครอบคลุมคำแนะนำ/ตรวจทานของผู้วาดด้วย', en: 'Credit now covers the artist\'s review, not just the artwork', ja: 'クレジットにご助言への感謝を追記' },
+    { v: '1.19.2', th: 'ท้ายเว็บแปลตามภาษา + ลิงก์ซอร์สเปิดแท็บใหม่', en: 'Footer follows the app language · source link opens in a new tab', ja: 'フッターを多言語化 · ソースリンクを別タブで開くように' },
     { v: '1.19.1', th: 'การ์ดพรีวิวลิงก์มีคำอธิบายภาษาญี่ปุ่นด้วย', en: 'Link-preview card now reads in Japanese too', ja: 'リンクプレビュー画像に日本語の説明を追加' },
     { v: '1.19.0', th: 'เปิดแอปเป็นภาษาของเบราว์เซอร์อัตโนมัติ · ใช้ 囲碁 แทน 围棋 · การ์ดพรีวิวลิงก์', en: 'Auto-picks your browser language · 囲碁 instead of 围棋 · link-preview card', ja: 'ブラウザの言語で自動表示 · 表記を囲碁に統一 · リンクプレビュー画像を追加' },
     { v: '1.18.5', th: 'บทบันไดใช้ผัง l5_3 ของ とろろ เป๊ะ + รูปหน้า 1 แขนสั้น + แก้ CSP', en: 'Ladder uses とろろ\'s exact l5_3 board + short-arm face 1 + CSP fixes', ja: 'シチョウをとろろ様のl5_3の配石に + 表情1を差し替え + CSP修正' },
@@ -74,7 +76,7 @@
       neuralFail: 'โหลดนิวรัลไม่สำเร็จ ใช้บอทปกติแทน',
       playAs: 'คุณเล่นเป็น', botPlays: 'บอทเล่น', blackFirst: 'ดำเดินก่อน', takeTurns: 'เดินสลับกัน',
       lessonWord: 'บทที่ ', hotseatBody: 'ผลัดกันเดินบนเครื่องเดียว ดำเริ่มก่อน', hintLook: 'ลองดูจุดที่ถูกไฮไลต์',
-      footMadeBy: 'พัฒนาโดย', footArt: 'ภาพประกอบ', footOpen: 'โอเพนซอร์ส (MIT):', footSource: 'ซอร์สโค้ดบน GitHub'
+      footMadeBy: 'พัฒนาโดย', footArt: 'ภาพประกอบและคำแนะนำ', footOpen: 'โอเพนซอร์ส (MIT):', footSource: 'ซอร์สโค้ดบน GitHub'
     },
     en: {
       modePlay: 'Two players', modeBot: 'Vs bot', modeLearn: 'Learn',
@@ -102,7 +104,7 @@
       neuralFail: 'Neural failed to load; using the regular bot',
       playAs: 'You play', botPlays: 'Bot plays', blackFirst: 'Black moves first', takeTurns: 'take turns',
       lessonWord: 'Lesson ', hotseatBody: 'Hot-seat on one device. Black starts.', hintLook: 'Look at the highlighted point',
-      footMadeBy: 'Made by', footArt: 'Artwork', footOpen: 'open source (MIT):', footSource: 'source on GitHub'
+      footMadeBy: 'Made by', footArt: 'Artwork & review', footOpen: 'open source (MIT):', footSource: 'source on GitHub'
     },
     ja: {
       modePlay: 'ふたりで対局', modeBot: 'ボットと対局', modeLearn: '入門モード',
@@ -130,7 +132,7 @@
       neuralFail: 'ニューラルの読み込みに失敗。通常ボットで続行します',
       playAs: 'あなたの石', botPlays: 'ボット', blackFirst: '黒が先手', takeTurns: '交互に打つ',
       lessonWord: 'レッスン ', hotseatBody: '1台の端末で交互に打ちます。黒が先手。', hintLook: 'ハイライトされた点を見てみよう',
-      footMadeBy: '制作', footArt: 'イラスト', footOpen: 'オープンソース（MIT）:', footSource: 'GitHubのソースコード'
+      footMadeBy: '制作', footArt: 'イラスト・ご助言', footOpen: 'オープンソース（MIT）:', footSource: 'GitHubのソースコード'
     }
   };
 
