@@ -1,6 +1,7 @@
 /*
  * lessons.js — teaching-mode content. Plain data + tiny check() predicates.
- * Bilingual TH/EN. No DOM here; ui.js drives it.
+ * Trilingual TH/EN/JA. No DOM here; ui.js drives it.
+ * Board positions are validated by tools/test-lessons.js — run it after any edit.
  * Stones: [x, y, 'B'|'W']. Markers hint the board: [x, y, kind].
  */
 (function (root) {

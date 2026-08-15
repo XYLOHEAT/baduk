@@ -19,8 +19,18 @@ Medium on 19×19** — which run KataGo + TensorFlow.js in the browser.
 | บอท **ยาก** (ทุกขนาด) · Hard | KataGo เน็ตเล็ก + TF.js | ~4 MB | ~0.3–0.5 GB | RAM 4 GB+, เครื่องปี 2018+ |
 | บอท **นิวรัล** (ดั้น) · Neural | KataGo b18 + TF.js | **~93 MB** | **~1 GB+** | RAM 8 GB+, เดสก์ท็อป/โน้ตบุ๊กยุคใหม่ + GPU |
 
+**เครื่องไม่ถึงเกณฑ์ก็เล่นนิวรัลได้** — ถ้าไม่มี WebGPU หรือแรมน้อยกว่า 8 GB แอปจะ**ไม่โหลดเน็ต 93 MB เลย**
+แต่สลับไปใช้เน็ตเล็กแบบคิดเต็มที่แทนโดยอัตโนมัติ (อ่อนกว่าดั้น แต่ยังแข็งกว่าระดับ "ยาก" และไม่ทำเครื่องค้าง)
+พร้อมแจ้งบนหน้าจอว่ากำลังใช้โหมดนี้
+(*If the device lacks WebGPU or has &lt;8 GB RAM, Neural silently uses the compact net at full
+strength instead of the 93 MB net — weaker than dan level, but it will not freeze the machine.*)
+
 RAM = พีคชั่วคราวตอนบอทกำลังคิด · แอปคืนแรมให้อัตโนมัติเมื่อเลิกใช้บอทเน็ต
 (transient peak while the bot thinks; the app frees it automatically when the net isn't in use).
+
+## ภาษา · Languages
+
+ไทย · English · 日本語 (สลับได้ในแอป ปุ่มมุมขวาบน — จำค่าไว้ให้)
 
 ## เบราว์เซอร์ · Browser
 
