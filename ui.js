@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.19.3';
+  var VERSION = '1.19.4';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.19.4', th: 'เพิ่มเครดิตผู้ทดสอบเล่นและให้คำแนะนำ', en: 'Credit for playtesting & feedback', ja: 'テストプレイ・ご意見のクレジットを追加' },
     { v: '1.19.3', th: 'เครดิตครอบคลุมคำแนะนำ/ตรวจทานของผู้วาดด้วย', en: 'Credit now covers the artist\'s review, not just the artwork', ja: 'クレジットにご助言への感謝を追記' },
     { v: '1.19.2', th: 'ท้ายเว็บแปลตามภาษา + ลิงก์ซอร์สเปิดแท็บใหม่', en: 'Footer follows the app language · source link opens in a new tab', ja: 'フッターを多言語化 · ソースリンクを別タブで開くように' },
     { v: '1.19.1', th: 'การ์ดพรีวิวลิงก์มีคำอธิบายภาษาญี่ปุ่นด้วย', en: 'Link-preview card now reads in Japanese too', ja: 'リンクプレビュー画像に日本語の説明を追加' },
@@ -76,7 +77,7 @@
       neuralFail: 'โหลดนิวรัลไม่สำเร็จ ใช้บอทปกติแทน',
       playAs: 'คุณเล่นเป็น', botPlays: 'บอทเล่น', blackFirst: 'ดำเดินก่อน', takeTurns: 'เดินสลับกัน',
       lessonWord: 'บทที่ ', hotseatBody: 'ผลัดกันเดินบนเครื่องเดียว ดำเริ่มก่อน', hintLook: 'ลองดูจุดที่ถูกไฮไลต์',
-      footMadeBy: 'พัฒนาโดย', footArt: 'ภาพประกอบและคำแนะนำ', footOpen: 'โอเพนซอร์ส (MIT):', footSource: 'ซอร์สโค้ดบน GitHub'
+      footMadeBy: 'พัฒนาโดย', footArt: 'ภาพประกอบและคำแนะนำ', footTest: 'ทดสอบเล่นและให้คำแนะนำ', footOpen: 'โอเพนซอร์ส (MIT):', footSource: 'ซอร์สโค้ดบน GitHub'
     },
     en: {
       modePlay: 'Two players', modeBot: 'Vs bot', modeLearn: 'Learn',
@@ -104,7 +105,7 @@
       neuralFail: 'Neural failed to load; using the regular bot',
       playAs: 'You play', botPlays: 'Bot plays', blackFirst: 'Black moves first', takeTurns: 'take turns',
       lessonWord: 'Lesson ', hotseatBody: 'Hot-seat on one device. Black starts.', hintLook: 'Look at the highlighted point',
-      footMadeBy: 'Made by', footArt: 'Artwork & review', footOpen: 'open source (MIT):', footSource: 'source on GitHub'
+      footMadeBy: 'Made by', footArt: 'Artwork & review', footTest: 'Playtesting & feedback', footOpen: 'open source (MIT):', footSource: 'source on GitHub'
     },
     ja: {
       modePlay: 'ふたりで対局', modeBot: 'ボットと対局', modeLearn: '入門モード',
@@ -132,7 +133,7 @@
       neuralFail: 'ニューラルの読み込みに失敗。通常ボットで続行します',
       playAs: 'あなたの石', botPlays: 'ボット', blackFirst: '黒が先手', takeTurns: '交互に打つ',
       lessonWord: 'レッスン ', hotseatBody: '1台の端末で交互に打ちます。黒が先手。', hintLook: 'ハイライトされた点を見てみよう',
-      footMadeBy: '制作', footArt: 'イラスト・ご助言', footOpen: 'オープンソース（MIT）:', footSource: 'GitHubのソースコード'
+      footMadeBy: '制作', footArt: 'イラスト・ご助言', footTest: 'テストプレイ・ご意見', footOpen: 'オープンソース（MIT）:', footSource: 'GitHubのソースコード'
     }
   };
 
@@ -1051,6 +1052,7 @@
     $('themeBtn').setAttribute('aria-label', t('theme'));
     $('footMadeBy').textContent = t('footMadeBy');
     $('footArt').textContent = t('footArt');
+    $('footTest').textContent = t('footTest');
     $('footOpen').textContent = t('footOpen');
     $('repoLink').textContent = t('footSource');
     if (!S.busy) setMascot('idle', S.mode === 'bot' ? t('mascotPlay') : t('mascotHi')); // re-speak in the new language
