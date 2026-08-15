@@ -1,0 +1,10 @@
+# Crawl the app itself; keep bots out of the heavy machine-learning assets.
+# /models/* is a ~93MB KataGo network streamed from R2 and /assets/models/ a ~4MB one —
+# nothing to index, and no reason for a crawler to pull them.
+User-agent: *
+Disallow: /models/
+Disallow: /assets/models/
+Disallow: /tfjs/
+Allow: /
+
+Sitemap: https://go.soxylo.com/sitemap.xml

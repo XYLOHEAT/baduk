@@ -5,6 +5,20 @@ export async function onRequest(context) {
   const { params, env, request } = context;
   const method = request.method;
   if (method !== 'GET' && method !== 'HEAD') return new Response('Method not allowed', { status: 405 });
+
+  // Only our own page may pull the ~93MB net. Browsers label the request via Sec-Fetch-Site;
+  // the neural worker's same-origin fetch() sends 'same-origin'. Anything explicitly labelled
+  // cross-site (hotlinking from another site) or 'none' (someone pasting the URL directly) is
+  // refused. Requests without the header (older browsers, curl) are still allowed — this stops
+  // casual hotlinking and accidental downloads, not a determined scraper; rate limiting at the
+  // edge is the control for that.
+  const site = request.headers.get('sec-fetch-site');
+  if (site === 'cross-site' || site === 'none') {
+    return new Response('Not available for direct or cross-site requests', {
+      status: 403, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' }
+    });
+  }
+
   const key = Array.isArray(params.path) ? params.path.join('/') : params.path;
   try {
     if (method === 'HEAD') {
