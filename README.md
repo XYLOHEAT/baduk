@@ -1,4 +1,4 @@
-# 围棋 · Go · หมากล้อม — learn & play
+# 囲碁 · Go · หมากล้อม — learn & play
 
 A small, dependency-free web app to **learn and play Go** (Baduk / Weiqi / หมากล้อม) in the browser.
 

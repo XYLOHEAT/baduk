@@ -183,10 +183,10 @@ footer a { color: var(--accent); text-decoration: none; }
    ?v= cache-busts when the guide art changes (these filenames are reused); bump with VERSION. */
 .mascot-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .mascot { width: 62px; height: 46px; flex: none; background: center/contain no-repeat; }
-.mascot[data-state="idle"]  { background-image: url(assets/mascot/idle.png?v=1.18.5); }
-.mascot[data-state="happy"] { background-image: url(assets/mascot/happy.png?v=1.18.5); }
-.mascot[data-state="think"] { background-image: url(assets/mascot/think.png?v=1.18.5); }
-.mascot[data-state="oops"]  { background-image: url(assets/mascot/oops.png?v=1.18.5); }
+.mascot[data-state="idle"]  { background-image: url(assets/mascot/idle.png?v=1.19.0); }
+.mascot[data-state="happy"] { background-image: url(assets/mascot/happy.png?v=1.19.0); }
+.mascot[data-state="think"] { background-image: url(assets/mascot/think.png?v=1.19.0); }
+.mascot[data-state="oops"]  { background-image: url(assets/mascot/oops.png?v=1.19.0); }
 .mascot-msg { font-size: 13.5px; color: var(--ink); margin: 0; min-height: 18px; font-weight: 500; }
 
 @media (prefers-reduced-motion: reduce) {

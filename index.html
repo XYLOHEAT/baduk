@@ -6,15 +6,33 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="เรียนและเล่นโกะ (หมากล้อม / 围棋 / Go) ในเบราว์เซอร์ — 12 บทเรียน เล่นกับบอท 4 ระดับ ไทย/English/日本語 · Learn and play Go in your browser, free, no install.">
-  <title>围棋 · Go · หมากล้อม — เรียนและเล่น</title>
-  <link rel="stylesheet" href="styles.css?v=1.18.5">
+  <meta name="description" content="เรียนและเล่นโกะ (หมากล้อม / 囲碁 / Go) ในเบราว์เซอร์ — 12 บทเรียน เล่นกับบอท 4 ระดับ ไทย/English/日本語 · Learn and play Go in your browser, free, no install.">
+  <title>囲碁 · Go · หมากล้อม — เรียนและเล่น</title>
+
+  <!-- link preview (X, LINE, Discord, Facebook…) — absolute URLs required -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://go.soxylo.com/">
+  <meta property="og:site_name" content="囲碁 · Go · หมากล้อม">
+  <meta property="og:title" content="囲碁 · Go · หมากล้อม — learn &amp; play">
+  <meta property="og:description" content="ブラウザで囲碁を学んで打てる無料アプリ。12レッスン、4段階のボット（有段KataGo対応）、日本語・ไทย・English。インストール不要。">
+  <meta property="og:image" content="https://go.soxylo.com/assets/og.png?v=1.19.0">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="碁石さん stones on a Go board — 囲碁 · Go · หมากล้อม, go.soxylo.com">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:locale:alternate" content="th_TH">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="囲碁 · Go · หมากล้อม — learn &amp; play">
+  <meta name="twitter:description" content="ブラウザで囲碁を学んで打てる無料アプリ。12レッスン、4段階のボット、日本語対応。インストール不要。">
+  <meta name="twitter:image" content="https://go.soxylo.com/assets/og.png?v=1.19.0">
+  <link rel="stylesheet" href="styles.css?v=1.19.0">
 </head>
 <body>
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1><span class="cjk">围棋</span> Go <span class="cjk">หมากล้อม</span></h1>
+        <h1><span class="cjk">囲碁</span> Go <span class="cjk">หมากล้อม</span></h1>
         <span class="sub">learn &amp; play</span>
       </div>
       <div class="top-controls">
@@ -141,10 +159,10 @@
     </div>
 
     <footer>
-      <span>Open source · zero dependencies · </span>
-      <a id="repoLink" href="#" rel="noopener">source</a>
-      <span> · <button id="versionBtn" class="ver-btn" type="button"><span id="version"></span></button></span>
+      <span>Made by <a href="https://github.com/XYLOHEAT" rel="noopener noreferrer" target="_blank">XYLO</a></span>
       <span> · 碁石さん © <a href="https://tororoigo.web.fc2.com/" rel="noopener noreferrer" target="_blank">とろろ</a></span>
+      <span> · open source (MIT): <a id="repoLink" href="#" rel="noopener">source on GitHub</a></span>
+      <span> · <button id="versionBtn" class="ver-btn" type="button"><span id="version"></span></button></span>
     </footer>
   </div>
 
@@ -157,8 +175,8 @@
   </dialog>
 
   <!-- ?v= cache-busts on each release; bump together with VERSION in ui.js / worker.js -->
-  <script src="engine.js?v=1.18.5"></script>
-  <script src="lessons.js?v=1.18.5"></script>
-  <script src="ui.js?v=1.18.5"></script>
+  <script src="engine.js?v=1.19.0"></script>
+  <script src="lessons.js?v=1.19.0"></script>
+  <script src="ui.js?v=1.19.0"></script>
 </body>
 </html>

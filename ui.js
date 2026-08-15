@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.18.5';
+  var VERSION = '1.19.0';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.19.0', th: 'เปิดแอปเป็นภาษาของเบราว์เซอร์อัตโนมัติ · ใช้ 囲碁 แทน 围棋 · การ์ดพรีวิวลิงก์', en: 'Auto-picks your browser language · 囲碁 instead of 围棋 · link-preview card', ja: 'ブラウザの言語で自動表示 · 表記を囲碁に統一 · リンクプレビュー画像を追加' },
     { v: '1.18.5', th: 'บทบันไดใช้ผัง l5_3 ของ とろろ เป๊ะ + รูปหน้า 1 แขนสั้น + แก้ CSP', en: 'Ladder uses とろろ\'s exact l5_3 board + short-arm face 1 + CSP fixes', ja: 'シチョウをとろろ様のl5_3の配石に + 表情1を差し替え + CSP修正' },
     { v: '1.18.4', th: 'บทบันไดเห็นขั้นบันไดจนชนขอบจริง + แก้คำอธิบายบทสแนปแบ็ก (ญี่ปุ่น)', en: 'Ladder lesson now shows the full staircase to the edge + clearer snapback wording', ja: 'シチョウのレッスンを端まで続く階段の形に + ウッテガエシの説明文を修正' },
     { v: '1.18.3', th: 'บทสแนปแบ็กใช้ผังตามแผนภาพของ とろろ เป๊ะ', en: 'Snapback lesson now uses とろろ\'s exact diagram', ja: 'ウッテガエシのレッスンをとろろ様の図の通りの配石に' },
@@ -129,10 +130,27 @@
     }
   };
 
+  // A stored choice always wins; otherwise follow the browser so a Japanese or English
+  // visitor lands in their own language instead of Thai. Nothing is written to storage
+  // here — only an explicit tap on the language button pins a preference.
+  function pickLang() {
+    var stored = localStorage.getItem('baduk.lang');
+    if (['th', 'en', 'ja'].indexOf(stored) >= 0) return stored;
+    var list = (navigator.languages && navigator.languages.length) ? navigator.languages
+      : [navigator.language || ''];
+    for (var i = 0; i < list.length; i++) {
+      var tag = String(list[i]).toLowerCase();
+      if (tag.indexOf('ja') === 0) return 'ja';
+      if (tag.indexOf('th') === 0) return 'th';
+      if (tag.indexOf('en') === 0) return 'en';
+    }
+    return 'th';
+  }
+
   // ---------- state ----------
   var S = {
     // validate persisted values: a corrupted localStorage must not crash or inject
-    lang: ['th', 'en', 'ja'].indexOf(localStorage.getItem('baduk.lang')) >= 0 ? localStorage.getItem('baduk.lang') : 'th',
+    lang: pickLang(),
     theme: localStorage.getItem('baduk.theme'),
     mode: 'play',
     size: 9,
