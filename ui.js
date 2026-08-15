@@ -7,9 +7,10 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.19.0';
+  var VERSION = '1.19.1';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
+    { v: '1.19.1', th: 'การ์ดพรีวิวลิงก์มีคำอธิบายภาษาญี่ปุ่นด้วย', en: 'Link-preview card now reads in Japanese too', ja: 'リンクプレビュー画像に日本語の説明を追加' },
     { v: '1.19.0', th: 'เปิดแอปเป็นภาษาของเบราว์เซอร์อัตโนมัติ · ใช้ 囲碁 แทน 围棋 · การ์ดพรีวิวลิงก์', en: 'Auto-picks your browser language · 囲碁 instead of 围棋 · link-preview card', ja: 'ブラウザの言語で自動表示 · 表記を囲碁に統一 · リンクプレビュー画像を追加' },
     { v: '1.18.5', th: 'บทบันไดใช้ผัง l5_3 ของ とろろ เป๊ะ + รูปหน้า 1 แขนสั้น + แก้ CSP', en: 'Ladder uses とろろ\'s exact l5_3 board + short-arm face 1 + CSP fixes', ja: 'シチョウをとろろ様のl5_3の配石に + 表情1を差し替え + CSP修正' },
     { v: '1.18.4', th: 'บทบันไดเห็นขั้นบันไดจนชนขอบจริง + แก้คำอธิบายบทสแนปแบ็ก (ญี่ปุ่น)', en: 'Ladder lesson now shows the full staircase to the edge + clearer snapback wording', ja: 'シチョウのレッスンを端まで続く階段の形に + ウッテガエシの説明文を修正' },

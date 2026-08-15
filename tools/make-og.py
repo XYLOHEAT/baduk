@@ -68,16 +68,18 @@ for cx, cy, colour, face in [(1, 1, 'black', 13), (2, 2, 'white', 11),
 run(d, 70, 150, [('囲碁', font(CJK, 62), ACCENT),
                  (' Go ', font(LAT, 62, 2), INK),
                  ('หมากล้อม', font(THAI, 58), ACCENT)])
-d.text((70, 240), 'learn & play', font=font(LAT, 27), fill=SOFT)
+d.text((70, 236), 'learn & play', font=font(LAT, 27), fill=SOFT)
 
-d.text((70, 304), '12 บทเรียน · เล่นกับบอทระดับดั้น', font=font(THAI, 26), fill=INK)
-d.text((70, 348), '12 lessons · play a dan-level KataGo bot', font=font(LAT, 27), fill=INK)
-run(d, 70, 392, [('ไทย', font(THAI, 26), SOFT),
-                 (' / English / ', font(LAT, 27), SOFT),
-                 ('日本語', font(CJK, 27), SOFT)])
+# one line per supported language — that says "trilingual" better than a list would.
+# Japanese first: the artist is introducing the app to a Japanese audience.
+run(d, 70, 296, [('12レッスン · 有段', font(CJK, 26), INK),
+                 ('KataGo', font(LAT, 26), INK),
+                 ('ボットと対局', font(CJK, 26), INK)])
+d.text((70, 340), '12 บทเรียน · เล่นกับบอทระดับดั้น', font=font(THAI, 26), fill=INK)
+d.text((70, 384), '12 lessons · play a dan-level KataGo bot', font=font(LAT, 27), fill=INK)
 
-d.rounded_rectangle([70, 456, 392, 514], 29, fill=ACCENT)
-d.text((100, 472), 'go.soxylo.com', font=font(LAT, 27), fill=(255, 255, 255))
+d.rounded_rectangle([70, 452, 392, 510], 29, fill=ACCENT)
+d.text((100, 468), 'go.soxylo.com', font=font(LAT, 27), fill=(255, 255, 255))
 
 run(d, 70, 558, [('碁石さん', font(CJK, 19), SOFT),
                  (' © ', font(LAT, 19), SOFT),
