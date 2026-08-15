@@ -7,7 +7,7 @@
   'use strict';
   var E = window.GoEngine, LESSONS = window.GoLessons;
   var BLACK = E.BLACK, WHITE = E.WHITE, EMPTY = E.EMPTY;
-  var VERSION = '1.19.1';
+  var VERSION = '1.19.2';
   // shown in the in-app "version history" dialog (newest first)
   var CHANGELOG = [
     { v: '1.19.1', th: 'การ์ดพรีวิวลิงก์มีคำอธิบายภาษาญี่ปุ่นด้วย', en: 'Link-preview card now reads in Japanese too', ja: 'リンクプレビュー画像に日本語の説明を追加' },
@@ -73,7 +73,8 @@
       smallLoading: 'กำลังโหลดเน็ตเล็ก (~4MB) …',
       neuralFail: 'โหลดนิวรัลไม่สำเร็จ ใช้บอทปกติแทน',
       playAs: 'คุณเล่นเป็น', botPlays: 'บอทเล่น', blackFirst: 'ดำเดินก่อน', takeTurns: 'เดินสลับกัน',
-      lessonWord: 'บทที่ ', hotseatBody: 'ผลัดกันเดินบนเครื่องเดียว ดำเริ่มก่อน', hintLook: 'ลองดูจุดที่ถูกไฮไลต์'
+      lessonWord: 'บทที่ ', hotseatBody: 'ผลัดกันเดินบนเครื่องเดียว ดำเริ่มก่อน', hintLook: 'ลองดูจุดที่ถูกไฮไลต์',
+      footMadeBy: 'พัฒนาโดย', footArt: 'ภาพประกอบ', footOpen: 'โอเพนซอร์ส (MIT):', footSource: 'ซอร์สโค้ดบน GitHub'
     },
     en: {
       modePlay: 'Two players', modeBot: 'Vs bot', modeLearn: 'Learn',
@@ -100,7 +101,8 @@
       smallLoading: 'Loading the compact net (~4 MB)…',
       neuralFail: 'Neural failed to load; using the regular bot',
       playAs: 'You play', botPlays: 'Bot plays', blackFirst: 'Black moves first', takeTurns: 'take turns',
-      lessonWord: 'Lesson ', hotseatBody: 'Hot-seat on one device. Black starts.', hintLook: 'Look at the highlighted point'
+      lessonWord: 'Lesson ', hotseatBody: 'Hot-seat on one device. Black starts.', hintLook: 'Look at the highlighted point',
+      footMadeBy: 'Made by', footArt: 'Artwork', footOpen: 'open source (MIT):', footSource: 'source on GitHub'
     },
     ja: {
       modePlay: 'ふたりで対局', modeBot: 'ボットと対局', modeLearn: '入門モード',
@@ -127,7 +129,8 @@
       smallLoading: '小型ネット（~4MB）を読み込み中…',
       neuralFail: 'ニューラルの読み込みに失敗。通常ボットで続行します',
       playAs: 'あなたの石', botPlays: 'ボット', blackFirst: '黒が先手', takeTurns: '交互に打つ',
-      lessonWord: 'レッスン ', hotseatBody: '1台の端末で交互に打ちます。黒が先手。', hintLook: 'ハイライトされた点を見てみよう'
+      lessonWord: 'レッスン ', hotseatBody: '1台の端末で交互に打ちます。黒が先手。', hintLook: 'ハイライトされた点を見てみよう',
+      footMadeBy: '制作', footArt: 'イラスト', footOpen: 'オープンソース（MIT）:', footSource: 'GitHubのソースコード'
     }
   };
 
@@ -1044,6 +1047,10 @@
     $('nextLesson').textContent = t('next') + ' ›';
     $('langBtn').textContent = t('langName');
     $('themeBtn').setAttribute('aria-label', t('theme'));
+    $('footMadeBy').textContent = t('footMadeBy');
+    $('footArt').textContent = t('footArt');
+    $('footOpen').textContent = t('footOpen');
+    $('repoLink').textContent = t('footSource');
     if (!S.busy) setMascot('idle', S.mode === 'bot' ? t('mascotPlay') : t('mascotHi')); // re-speak in the new language
     if ($('changelog').open) openChangelog(); // refresh the version list in the new language
   }
