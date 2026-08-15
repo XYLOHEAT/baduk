@@ -6,12 +6,15 @@ export async function onRequest(context) {
   const method = request.method;
   if (method !== 'GET' && method !== 'HEAD') return new Response('Method not allowed', { status: 405 });
 
-  // Only our own page may pull the ~93MB net. Browsers label the request via Sec-Fetch-Site;
-  // the neural worker's same-origin fetch() sends 'same-origin'. Anything explicitly labelled
-  // cross-site (hotlinking from another site) or 'none' (someone pasting the URL directly) is
-  // refused. Requests without the header (older browsers, curl) are still allowed — this stops
-  // casual hotlinking and accidental downloads, not a determined scraper; rate limiting at the
-  // edge is the control for that.
+  // Anti-hotlink hygiene for the ~93MB net. The neural worker's same-origin fetch() is labelled
+  // Sec-Fetch-Site: same-origin; requests explicitly labelled cross-site (hotlinked from another
+  // site) or 'none' (URL pasted straight into the address bar) are refused. Missing header
+  // (older browsers, CLI tools) still passes.
+  // NOTE: the response is cached at the edge as immutable, and a cache HIT never reaches this
+  // Function — so this only applies on cache misses. That is fine: a cached hit costs no R2
+  // reads and Pages bandwidth is unmetered, so hotlinking is cheap rather than dangerous.
+  // Deliberately NOT adding `Vary: Sec-Fetch-Site`, which would enforce it on every request but
+  // split a 93MB object into several cache variants — a worse trade than the threat.
   const site = request.headers.get('sec-fetch-site');
   if (site === 'cross-site' || site === 'none') {
     return new Response('Not available for direct or cross-site requests', {

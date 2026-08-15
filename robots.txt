@@ -7,4 +7,33 @@ Disallow: /assets/models/
 Disallow: /tfjs/
 Allow: /
 
+# The 碁石さん artwork in /assets/mascot/ is used here by the artist's permission for this
+# non-commercial app; it is not ours to hand to training crawlers. Ask AI scrapers to stay out.
+User-agent: GPTBot
+Disallow: /
+User-agent: OAI-SearchBot
+Disallow: /assets/mascot/
+User-agent: ChatGPT-User
+Disallow: /assets/mascot/
+User-agent: ClaudeBot
+Disallow: /
+User-agent: Claude-Web
+Disallow: /
+User-agent: anthropic-ai
+Disallow: /
+User-agent: Google-Extended
+Disallow: /
+User-agent: Applebot-Extended
+Disallow: /
+User-agent: CCBot
+Disallow: /
+User-agent: Bytespider
+Disallow: /
+User-agent: PerplexityBot
+Disallow: /assets/mascot/
+User-agent: meta-externalagent
+Disallow: /
+User-agent: Amazonbot
+Disallow: /assets/mascot/
+
 Sitemap: https://go.soxylo.com/sitemap.xml
